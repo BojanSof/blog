@@ -16,7 +16,7 @@ timezone: Europe/Skopje
 
 title: Bojan Sofronievski Personal Blog # the main title
 
-tagline: 'To a great mind, nothing is little' - Sherlock Holmes # it will display as the sub-title
+tagline: To a great mind, nothing is little # it will display as the sub-title
 
 description: >- # used by seo meta and the atom feed
   Personal blog, mainly for technical projects in the fields of electronics, embedded systems and programming
