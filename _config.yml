@@ -14,7 +14,7 @@ timezone: Europe/Skopje
 # jekyll-seo-tag settings › https://github.com/jekyll/jekyll-seo-tag/blob/master/docs/usage.md
 # ↓ --------------------------
 
-title: Bojan Sofronievski Personal Blog # the main title
+title: Bojan's Personal Blog # the main title
 
 tagline: To a great mind, nothing is little # it will display as the sub-title
 
@@ -31,8 +31,8 @@ github:
 social:
   # Change to your full name.
   # It will be displayed as the default author of the posts and the copyright owner in the Footer
-  name: your_full_name
-  email: example@domain.com # change to your email address
+  name: Bojan Sofronievski
+  email: bojan.drago@gmail.com # change to your email address
   links:
     # The first element serves as the copyright owner's link
     - https://github.com/BojanSof # change to your github homepage
@@ -112,7 +112,7 @@ pwa:
 paginate: 10
 
 # The base URL of your site
-baseurl: "blog"
+baseurl: "/blog"
 
 # ------------ The following options are not recommended to be modified ------------------
 
