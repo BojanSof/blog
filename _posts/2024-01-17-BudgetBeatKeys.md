@@ -78,8 +78,27 @@ The capacitor will discharge until its voltage goes as low as $\frac{1}{3}V_{CC}
 This cycle repeats over and over again.
 The capacitor's voltage will charge up to $\frac{2}{3}V_{CC}$, with time constant $\tau_1$ and then it will discharge down to $\frac{1}{3}V_{CC}$, with time constant $\tau_2$.
 
-After understanding the working principle of the circuit, we can calculate the timing values of the generated waveform.
-To do that, we are going to use the graph below, along with some general known RC circuit equations.
+The figure below shows the waveforms of the capacitor's voltage and the output voltage.
+![555 timer IC voltage waveforms astable configuration](/assets/img/piano555/555-astable-waveforms.svg){: .light}
+![555 timer IC voltage waveforms astable configuration](/assets/img/piano555/555-astable-waveforms-dark.svg){: .dark}
+_555 timer IC voltage waveforms in astable configuration_
+
+Using some well known RC circuit formulas, we can find the time intervals for which the output is HIGH and LOW.
+
+$$\begin{align}
+T_H &= \tau_1 \ln{2} = (R_2 + R_3) C \ln{2} \\\\
+T_L &= \tau_2 \ln{2} = R_3 C \ln{2} \\
+\end{align}$$
+
+Now, we can calculate the frequency and duty cycle of the generated rectangle waveform:
+
+$$\begin{align}
+f &= \frac{1}{T_L + T_H} = \frac{1}{(R_2 + 2R_3) C \ln{2}} \\\\
+D (\%) &= \frac{T_H}{T_L + T_H} \cdot 100 = \frac{R_2 + R_3}{R_2 + 2R_3} \cdot 100 \\
+\end{align}$$
+
+> It is interesting to note that the duty cycle of the circuit can't be less than 50 %. It is possible to achieve lower duty cycles by connecting diode in parallel with $R_3$, which bypasses $R_3$ during the HIGH part of the cycle, and makes the HIGH interval dependent only on $R_2$ and $C$.
+{: .prompt-info }
 
 ## Designing the schematic diagram
 
