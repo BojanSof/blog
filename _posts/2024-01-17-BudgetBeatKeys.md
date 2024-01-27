@@ -102,7 +102,67 @@ D (\%) &= \frac{T_H}{T_L + T_H} \cdot 100 = \frac{R_2 + R_3}{R_2 + 2R_3} \cdot 1
 
 ## Designing the schematic diagram
 
-## Putting the project on breadboard
+Musical note has [pitch](https://en.wikipedia.org/wiki/Pitch_(music)) which is associated with the frequency of oscillations of a sound wave.
+What this basically means is that each musical note maps to a sound wave with specific frequency.
+The waveform of the sound wave used in this context is sine wave.
+However, we won't generate sine waves, but utilize rectangle waves generated using the astable configuration of the 555 timer IC.
+There is a difference in the way how sine wave and rectangle wave of same frequency sound, but we won't get into those details in this post.
+
+The table below shows the frequencies associated with the musical notes of [C major](https://en.wikipedia.org/wiki/C_major) scale, which is most common one used in music.
+
+| Musical note |  Frequency [Hz]  |
+|   :-----:    |     :------:     |
+| C<sub>4</sub>|      261.63      |
+| D<sub>4</sub>|      293.70      |
+| E<sub>4</sub>|      329.70      |
+| F<sub>4</sub>|      349.20      |
+| G<sub>4</sub>|      392.00      |
+| A<sub>4</sub>|      440.00      |
+| B<sub>4</sub>|      493.00      |
+| C<sub>5</sub>|      523.30      |
+
+How can we generate 8 different frequencies with the 555 timer IC?
+
+To answer that question, we can refer to the formula for calcuating the frequency of the generated rectangular waveform in astable configuration of the 555 timer IC.
+We can set some values for $R_2$ and $C$, and given the frequency of the note $f$, we can calculate the value of the resistor $R_3$.
+The formula for calculating the resistor $R_3$ is:
+
+$$R_3 = \frac{1}{2 f C \ln{2}} - \frac{R_2}{2}.$$
+
+If we set $R_2 = 1\ \mathrm{k\Omega}$ and $C = 100\ \mathrm{nF}$, we get the values for $R_3$ based on the frequencies $f$ as shown in the table below.
+The last column, E12 combination, will be used later when designing the circuit, as not all resistor values can be easily found.
+
+|  $f$ [Hz]  |  $R_3$ [$\Omega$]  |        E12 combination       |
+|:----------:|:------------------:|:----------------------------:|
+|   261.63   |       27071        |    27040 (prev + 2k2 + 820R) |
+|   293.70   |       24060        |    24020 (prev + 2k7)        |
+|   329.70   |       21378        |    21320 (prev + 1k2)        |
+|   349.20   |       20157        |    20120 (prev + 2k2)        |
+|   392.00   |       17901        |    17920 (prev + 1k + 1k)    |
+|   440.00   |       15894        |    15920 (prev + 1k8)        |
+|   493.00   |       14131        |    14120 (prev + 820R)       |
+|   523.30   |       13284        |    13300 (10k + 3k3)         |
+
+So to generate 8 different notes, we need 8 different $R_3$ resistors.
+To acomplish this, we can use tactile switches to connect multiple resistors in series to achieve the desired frequency.
+The schematic diagram below represents simple electronic piano, based on the 555 timer IC and few very cheap components.
+![555 timer IC electronic piano](/assets/img/piano555/555-piano.svg){: .light}
+![555 timer IC electronic piano](/assets/img/piano555/555-piano-dark.svg){: .dark}
+_Simple electronic piano based on 555 timer IC_
+
+If the switch SW<sub>8</sub> is pressed, while the other switches are not, the frequency is determined by the resistors $R_1$ and $R_{K8}$, and the capacitor $C_1$.
+In this case, the frequency of the waveform will be the one for the note C<sub>5</sub>, i.e. approximately 523.30 Hertz.
+If the switch SW<sub>4</sub> is pressed, while the other switches are not, the frequency is determined by the resistor $R_1$, the capacitor $C_1$ and the series resistance of $R_{K4}$ through $R_{K8}$.
+The frequency of the generated waveform is the one for the music note G<sub>4</sub>, i.e. approximately 392 Hertz.
+In conclusion, the switches create the appropriate resistance by connecting multiple switches in series for producing a waveform with the frequencies of the musical notes.
+
+The generated waveform has DC component, i.e. it varies in the midpoint between $0$ volts and $VCC$, that is $VCC/2$.
+This DC component is bad for the speaker coil, as it only heats the coil.
+To filter it out, we placed the electrolytic capacitor $C_2$, which in series with the speaker creates high-pass filter, to filter the unwanted DC component.
+
+Finally, we are going to put the circuit on a breadboard and play a bit with it.
+
+## Making BudgetBeatKeys
 
 ## Circuit enhancements
 
