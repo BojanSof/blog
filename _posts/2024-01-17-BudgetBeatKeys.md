@@ -4,6 +4,8 @@ date: 2024-01-17
 categories: [Electronics, Audio]
 tags: [electronics, audio]
 math: true
+image:
+  path: /assets/img/piano555/cover.webp
 ---
 
 # Dirt cheap electronic piano using 555 timer IC
@@ -163,6 +165,14 @@ To filter it out, we placed the electrolytic capacitor $C_2$, which in series wi
 Finally, we are going to put the circuit on a breadboard and play a bit with it.
 
 ## Making BudgetBeatKeys
+
+The image below shows the circuit connected on a breadboard.
+It is very simple and easy to connect.
+
+![BudgetBeatKeys on breadboard](/assets/img/piano555/breadboard.webp)
+_BudgetBeatKeys on a breadboard_
+
+And, here are few videos of it in action :)
 
 ## Circuit enhancements
 
