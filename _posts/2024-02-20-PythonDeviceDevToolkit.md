@@ -167,9 +167,13 @@ class SimulatedDevice:
         sample_period = 1 / self.fs
         while not self.__stop_data_gen_thread.is_set():
             start_time = time.time()
-            self._sin_queue.put(self.a_sin * np.sin(2 * np.pi * self.f_sin * self.i_sin / self.fs))
+            self._sin_queue.put(
+                self.a_sin * np.sin(2 * np.pi * self.f_sin * self.i_sin / self.fs)
+            )
             self.i_sin = self.i_sin + 1 if self.i_sin < self.fs / self.f_sin else 0
-            self._cos_queue.put(self.a_cos * np.cos(2 * np.pi * self.f_cos * self.i_cos / self.fs))
+            self._cos_queue.put(
+                self.a_cos * np.cos(2 * np.pi * self.f_cos * self.i_cos / self.fs)
+            )
             self.i_cos = self.i_cos + 1 if self.i_cos < self.fs / self.f_cos else 0
             self._rand_queue.put(self.rng.integers(1000, 5000, endpoint=True))
             elapsed_time = time.time() - start_time
