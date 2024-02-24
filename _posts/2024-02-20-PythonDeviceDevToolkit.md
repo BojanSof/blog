@@ -44,25 +44,168 @@ We will show examples by utilizing Wi-Fi, BLE and USB serial communication to re
 > All the code used in this post can be found on [this](dummy) GitHub repo. However, the code for the ESP32 won't be explained, as it is not the main topic of the post.
 {: .prompt-info }
 
-# Accessing device data
+## Accessing device data
 
 The first step for developing the software is establishing connection with the device.
 As mentioned previously, there are multiple protocols that the device can utilize to communicate with another device, for example computer or mobile phone.
 This post concentrates on 3 protocols mainly used for communication between the device that we are developing and another device that should utilize the data: USB communication, Bluetooth Low Energy and TCP/IP.
 There are few well-developed Python libraries which allow cross-platform usage of these protocols.
 
-## USB
+### USB
 
 By USB communication it is assumed that the USB controller of the device is configured as Communication Device Class (CDC) and the device communicate in same manner as via UART.
 [PySerial](https://pyserial.readthedocs.io/en/latest/index.html) is Python library that encapsulates the access to the serial port, and works on multiple platforms, including Windows, Linux and MacOS.
 The [short introduction](https://pyserial.readthedocs.io/en/latest/shortintro.html) demonstrates the basic usage of the library.
 
-## Bluetooth Low Energy
+### Bluetooth Low Energy
 
 [Bleak](https://bleak.readthedocs.io/en/latest/) is probably the best cross-platform BLE Python library.
 The [usage](https://bleak.readthedocs.io/en/latest/usage.html) page of the docs demonstrates the basic usage of the library.
 As the library utilizes [asynchronous I/O](https://docs.python.org/3/library/asyncio.html), it may be a bit difficult for novice developers to incorporate it in their projects.
 
-## TCP/IP
+### TCP/IP
 
 For TCP/IP communication, Python already provides [socket](https://docs.python.org/3/library/socket.html) library.
+
+## Real-time data visualization
+
+One of the most comprehensive libraries in Python for creating visualizations, animations and interactive plots in Python is [`matplotlib`](https://matplotlib.org/).
+It provides API that can be integrated in multiple famous GUI frameworks, like [Qt](https://www.qt.io/), [Tkinter](https://docs.python.org/3/library/tkinter.html), [GTK](https://www.gtk.org/) and few others.
+The library provides very well written [documentation](https://matplotlib.org/stable/api/index.html) and many [examples](https://matplotlib.org/stable/gallery/index.html).
+Although `matplotlib` is mainly used for generating offline visualizations, we will create python module that will allow us to use it for real-time visualization.
+
+### Short introduction to concepts used in `matplotlib`
+
+Before presenting the real-time visualization module, we will look into some of the basic concepts and terms used in `matplotlib`.
+This will help us to better explain the real-time visualization module.
+Deeper knowledge for `matplotlib` can be gained by reading the [User Guide](https://matplotlib.org/stable/users/index.html).
+
+`matplotlib` graphs the data on a [figure](https://matplotlib.org/stable/users/explain/figure/figure_intro.html#figure-intro).
+Each figure contains one or more [axes or subplots](https://matplotlib.org/stable/users/explain/axes/axes_intro.html).
+There are many methods that can be called on an axis to plot the actual data, such as line plots, scatter plots, polar plots, bar plots, image plots, 3D plots and many more.
+Each axis provides methods to set labels, titles, legends, ticks and other properties.
+
+All objects that we can interract with in `matplotlib` are called [artists](https://matplotlib.org/stable/users/explain/artists/artist_intro.html).
+Figures and axes are also artists, but also all graph items, like line plots, bar plots, image plots and 3D plots are artists, usually created by calling methods on axis.
+So broadly speaking, axes are artists that contain artists representing the graph items.
+Artists can be added or removed from axis and can be modified.
+
+We may question ourselves where and how the figures are actually displayed?
+The term [backend](https://matplotlib.org/stable/users/explain/figure/backends.html) in `matplotlib` represents the implementation that does the actual drawing of the figure.
+This is opposed to frontend, which represents the code that user normally writes to plot things.
+There are two types of backends:
+- interactive backends, which allow the user to interract with the figure, and
+- non-interactive or hardcopy backends, which make image files for the plotted things.
+
+Let's look into an example and demonstrate the concepts mentioned above.
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+
+# create data
+fs = 1000
+t_dur = 10
+t = np.linspace(0, t_dur, int(fs * t_dur))
+f_sine = [1, 3, 5]
+a_sine = [3, 2, 1]
+o_sine = [6, 0, -4]
+s = [
+    a * np.sin(2 * np.pi * f * t) + o
+    for a, f, o in zip(a_sine, f_sine, o_sine)
+]
+
+# plotting
+fig, ax = plt.subplots(1, 1, figsize=(8, 6))
+artists = [ax.plot(t, y, label=f"{f} Hz") for y, f in zip(s, f_sine)]
+ax.set_title("Sine waves")
+ax.set_xlabel("Time [s]")
+ax.legend()
+plt.show()
+```
+{: file='matplotlib_concepts.py'}
+
+This example produces the plot shown on the image below.
+The basic concepts of matplotlib are also shown on the same image.
+
+![Basic concepts in `matplotlib`](/assets/img/pyrtkit/matplotlib-concepts.svg){: .light}
+![Basic concepts in `matplotlib`](/assets/img/pyrtkit/matplotlib-concepts-dark.svg){: .dark}
+_Basic concepts in `matplotlib`_
+
+### Real-time plotting using `matplotlib`
+
+In this section we will present multiple approaches to perform real-time plotting using `matplotlib` that will eventually lead to the solution used in the real-time plotting module.
+To concentrate on the plotting part, we will use simulated device that will output synthetic data.
+
+```python
+import queue
+import threading
+import time
+import numpy as np
+
+class SimulatedDevice:
+    def __init__(self, seed=None, fs=50, f_sin=5, f_cos=2, a_sin=1, a_cos=1):
+        if f_sin > fs / 2:
+            raise ValueError("sine-wave frequency must be <= fs/2")
+        if f_cos > fs / 2:
+            raise ValueError("cosine-wave frequency must be <= fs/2")
+        self.rng = np.random.default_rng(seed)
+        self.fs = fs
+        self.f_sin = f_sin
+        self.f_cos = f_cos
+        self.a_sin = a_sin
+        self.a_cos = a_cos
+        self.i_sin = 0
+        self.i_cos = 0
+        self._sin_queue = queue.Queue()
+        self._cos_queue = queue.Queue()
+        self._rand_queue = queue.Queue()
+        self.__stop_data_gen_thread = threading.Event()
+        self.__data_gen_thread = threading.Thread(target=self.__data_gen)
+    
+    def __data_gen(self):
+        sample_period = 1 / self.fs
+        while not self.__stop_data_gen_thread.is_set():
+            start_time = time.time()
+            self._sin_queue.put(self.a_sin * np.sin(2 * np.pi * self.f_sin * self.i_sin / self.fs))
+            self.i_sin = self.i_sin + 1 if self.i_sin < self.fs / self.f_sin else 0
+            self._cos_queue.put(self.a_cos * np.cos(2 * np.pi * self.f_cos * self.i_cos / self.fs))
+            self.i_cos = self.i_cos + 1 if self.i_cos < self.fs / self.f_cos else 0
+            self._rand_queue.put(self.rng.integers(1000, 5000, endpoint=True))
+            elapsed_time = time.time() - start_time
+            if elapsed_time < sample_period:
+                time.sleep(sample_period - elapsed_time)
+    
+    @property
+    def sin(self):
+        return self._sin_queue.get()
+
+    @property
+    def cos(self):
+        return self._cos_queue.get()
+
+    @property
+    def rand(self):
+        return self._rand_queue.get()
+    
+    def start(self):
+        if self.__data_gen_thread.is_alive():
+            raise RuntimeError("data generation thread is already running")
+        self.__stop_data_gen_thread.clear()
+        self._sin_queue = queue.Queue()
+        self._cos_queue = queue.Queue()
+        self._rand_queue = queue.Queue()
+        self.__data_gen_thread.start()
+    
+    def stop(self):
+        self.__stop_data_gen_thread.set()
+        self.__data_gen_thread.join()
+    
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.stop()
+```
+{: file='simulated_device.py'}
