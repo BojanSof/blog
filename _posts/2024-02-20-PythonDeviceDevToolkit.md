@@ -69,8 +69,9 @@ For TCP/IP communication, Python already provides [socket](https://docs.python.o
 
 ### Simulated device
 
-When developing the required software, it is good if we can develop some parts of the software without need of external device.
-In our case, we can develop the real-time plotting part without relying on external device, but we will create simulated device.
+When developing the software, it is good if we can develop some parts of it without need of external device.
+In our case, we can develop the real-time plotting part without relying on external device.
+Instead, we will create simulated device.
 The code for the simulated device is given below.
 
 ```python
@@ -294,3 +295,94 @@ _Basic concepts in `matplotlib`_
 ### Real-time plotting using `matplotlib`
 
 In this section we will present multiple approaches to perform real-time plotting using `matplotlib` that will eventually lead to the solution used in the real-time plotting module.
+We are going to use the `Qt` backend, so ensure that PyQt6, PySide6, PyQt5, or PySide2 is installed.
+More details about backend dependencies can be found in [matplotlib's user guide](https://matplotlib.org/stable/users/installing/dependencies.html).
+
+#### Using [`FuncAnimation`](https://matplotlib.org/stable/api/_as_gen/matplotlib.animation.FuncAnimation.html)
+
+[`FuncAnimation`](https://matplotlib.org/stable/api/_as_gen/matplotlib.animation.FuncAnimation.html) is part of the [`animation`](https://matplotlib.org/stable/api/animation_api.html) module, which allows to update figure in regular intervals, by executing user-provided function.
+
+We will show example using `SimulatedDevice`.
+
+```python
+import time
+import datetime as dt
+import numpy as np
+from matplotlib import pyplot as plt
+from matplotlib.animation import FuncAnimation
+
+from simulated_device import SimulatedDevice
+
+dev = SimulatedDevice(fs=50, f_sin=5, f_cos=5)
+
+fig, axs = plt.subplots(3, 1, figsize=(8, 8), constrained_layout=True)
+
+x_sin = []
+y_sin = []
+x_cos = []
+y_cos = []
+x_rand = []
+y_rand = []
+num_points = 20
+
+# for benchmarking
+fps = []
+start_time = time.time()
+
+
+def visualize(i, x_sin, y_sin, x_cos, y_cos, x_rand, y_rand):
+    global start_time
+    # read data
+    sin, t_sin = dev.sin
+    cos, t_cos = dev.cos
+    rand, t_rand = dev.rand
+    x_sin.append(dt.datetime.fromtimestamp(t_sin).strftime("%H:%M:%S.%f"))
+    y_sin.append(sin)
+    x_cos.append(dt.datetime.fromtimestamp(t_cos).strftime("%H:%M:%S.%f"))
+    y_cos.append(cos)
+    x_rand.append(dt.datetime.fromtimestamp(t_rand).strftime("%H:%M:%S.%f"))
+    y_rand.append(rand)
+    x_sin = x_sin[-num_points:]
+    y_sin = y_sin[-num_points:]
+    x_cos = x_cos[-num_points:]
+    y_cos = y_cos[-num_points:]
+    x_rand = x_rand[-num_points:]
+    y_rand = y_rand[-num_points:]
+    axs[0].clear()
+    axs[0].plot(x_sin, y_sin)
+    axs[1].clear()
+    axs[1].plot(x_cos, y_cos)
+    axs[2].clear()
+    axs[2].plot(x_rand, y_rand)
+    for ax in axs:
+        ax.tick_params(axis="x", labelrotation=45)
+    axs[0].set_title("sin")
+    axs[1].set_title("cos")
+    axs[2].set_title("rand")
+    fps.append(1 / (time.time() - start_time))
+    start_time = time.time()
+
+
+dev.start()
+anim = FuncAnimation(
+    fig,
+    visualize,
+    fargs=(x_sin, y_sin, x_cos, y_cos, x_rand, y_rand),
+    interval=0,
+)
+plt.show()  # when the plot window is closed, this line will finish
+dev.stop()
+
+print(f"Mean FPS: {np.mean(fps)}")
+```
+{: file='funcanimation_example.py'}
+
+This example creates a figure with 3 subplots.
+The `FuncAnimation` calls the function `visualize`, which plots a maximum of `num_points` points on the subplots.
+We also try to measure and estimate the number of frames per second.
+
+After running the animation for some time and closing the plot window, in the console we can read the mean value of the frames per second (FPS).
+On my machine, with Intel i7-12700H CPU, the FPS is only `5.15`.
+The FPS gets worse if we increase the number of points plotted on the subplots, or if we add more subplots.
+
+Why is this approach so slow?
