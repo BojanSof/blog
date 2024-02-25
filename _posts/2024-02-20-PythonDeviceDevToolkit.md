@@ -369,13 +369,14 @@ anim = FuncAnimation(
     visualize,
     fargs=(x_sin, y_sin, x_cos, y_cos, x_rand, y_rand),
     interval=0,
+    cache_frame_data=False
 )
 plt.show()  # when the plot window is closed, this line will finish
 dev.stop()
 
 print(f"Mean FPS: {np.mean(fps)}")
 ```
-{: file='funcanimation_example.py'}
+{: file='funcanimation_example1.py'}
 
 This example creates a figure with 3 subplots.
 The `FuncAnimation` calls the function `visualize`, which plots a maximum of `num_points` points on the subplots.
@@ -386,3 +387,108 @@ On my machine, with Intel i7-12700H CPU, the FPS is only `5.15`.
 The FPS gets worse if we increase the number of points plotted on the subplots, or if we add more subplots.
 
 Why is this approach so slow?
+
+The reason is that the whole figure is redrawn every time we try to put new data.
+All of the axis box, including their ticks, ticks labels, titles and all of the lines are redrawn from scratch.
+
+When we call `ax.clear()`, we clear all the data that is plotted on the axis, along with all its properties, like ticks, tick labels and title.
+Then, we are adding new artist to the axis and we are editing the axis properties from scratch.
+
+In the [user guide](https://matplotlib.org/stable/users/explain/animations/animations.html) for matplotlib, we can see how we can utilize `FuncAnimation` to only iteratively edit `Artist`'s data, instead of doing the process above.
+This should increase the FPS.
+Let's modify the previous example:
+
+```python
+import time
+import numpy as np
+from matplotlib import pyplot as plt
+from matplotlib.animation import FuncAnimation
+
+from simulated_device import SimulatedDevice
+
+dev = SimulatedDevice(fs=50, f_sin=5, f_cos=5)
+
+fig, axs = plt.subplots(3, 1, figsize=(8, 8), constrained_layout=True)
+
+num_points = 50
+x_sin = num_points * [""]
+y_sin = num_points * [np.nan]
+x_cos = num_points * [""]
+y_cos = num_points * [np.nan]
+x_rand = num_points * [""]
+y_rand = num_points * [np.nan]
+
+# for benchmarking
+fps = []
+start_time = time.time()
+
+# create artists
+sin_artist = axs[0].plot(y_sin)[0]
+cos_artist = axs[1].plot(y_cos)[0]
+rand_artist = axs[2].plot(y_rand)[0]
+# modify axes properties
+for ax in axs:
+    ax.set_xlim([0, num_points - 1])
+for ax in axs:
+    ax.set_xticks([0, num_points/2, num_points])
+axs[0].set_title("sin")
+axs[1].set_title("cos")
+axs[2].set_title("rand")
+axs[0].set_ylim([-1.01, 1.01])
+axs[1].set_ylim([-1.01, 1.01])
+axs[2].set_ylim([999, 5001])
+
+
+def visualize(i, x_sin, y_sin, x_cos, y_cos, x_rand, y_rand):
+    global start_time
+    # read data
+    sin, t_sin = dev.sin
+    cos, t_cos = dev.cos
+    rand, t_rand = dev.rand
+    y_sin.append(sin)
+    y_cos.append(cos)
+    y_rand.append(rand)
+    y_sin = y_sin[-num_points:]
+    y_cos = y_cos[-num_points:]
+    y_rand = y_rand[-num_points:]
+    sin_artist.set_ydata(y_sin)
+    cos_artist.set_ydata(y_cos)
+    rand_artist.set_ydata(y_rand)
+    fps.append(1 / (time.time() - start_time))
+    start_time = time.time()
+    return (sin_artist, cos_artist, rand_artist)
+
+
+dev.start()
+anim = FuncAnimation(
+    fig,
+    visualize,
+    fargs=(x_sin, y_sin, x_cos, y_cos, x_rand, y_rand),
+    interval=0,
+    cache_frame_data=False,
+    blit=True
+)
+plt.show()
+dev.stop()
+
+print(f"Mean FPS: {np.mean(fps)}")
+```
+{: file='funcanimation_example2.py'}
+
+This example, on my machine achieves mean FPS of `48.25`.
+
+So we increased the FPS by a factor of nearly 10.
+That was achieved with:
+1. Creating artists for each signal beforehand and only changing their data using `set_ydata` method.
+2. Setting the axes properties beforehand, so no dynamic x-axis anymore.
+3. Specifying `blit=True` when creating the `FuncAnimation`. When `blit=True`, only the artists returned by `visualize` function are redrawn.
+
+> Although steps 1 and 2 are mandatory if we want to specify `blit=True`, please note that without specifying `blit=True`, the FPS will remain very low, like in the first example.
+{: .prompt-warning }
+
+> Blitting in the context of `matplotlib` is a technique that speeds-up repetitive drawing by rendering non-changing background elements only once, and every next draw, only the changed foreground elements are drawn. `matplotlib` user guide has [page about blitting](https://matplotlib.org/stable/users/explain/animations/blitting.html).
+{: .prompt-info }
+
+However, utilizing `FuncAnimation` requires the user to give the handling of the main thread.
+As `matplotlib` utilizes GUI frameworks when interactive backends are used, these frameworks require being run from the main thread.
+If you refer to the examples above, we can see that the lines after `plt.show()` are executed only when the figure window is closed.
