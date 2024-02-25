@@ -67,6 +67,165 @@ As the library utilizes [asynchronous I/O](https://docs.python.org/3/library/asy
 
 For TCP/IP communication, Python already provides [socket](https://docs.python.org/3/library/socket.html) library.
 
+### Simulated device
+
+When developing the required software, it is good if we can develop some parts of the software without need of external device.
+In our case, we can develop the real-time plotting part without relying on external device, but we will create simulated device.
+The code for the simulated device is given below.
+
+```python
+import queue
+import threading
+import time
+import numpy as np
+
+
+class SimulatedDevice:
+    def __init__(
+        self,
+        seed=None,
+        fs=50,
+        f_sin=5,
+        f_cos=2,
+        a_sin=1,
+        a_cos=1,
+        rand_min=1000,
+        rand_max=5000,
+    ):
+        if f_sin > fs / 2:
+            raise ValueError("sine-wave frequency must be <= fs/2")
+        if f_cos > fs / 2:
+            raise ValueError("cosine-wave frequency must be <= fs/2")
+        self.rng = np.random.default_rng(seed)
+        self.fs = fs
+        self.f_sin = f_sin
+        self.f_cos = f_cos
+        self.a_sin = a_sin
+        self.a_cos = a_cos
+        self.rand_min = rand_min
+        self.rand_max = rand_max
+        self.i_sin = 0
+        self.i_cos = 0
+        self._sin_queue = queue.Queue()
+        self._cos_queue = queue.Queue()
+        self._rand_queue = queue.Queue()
+        self.__stop_data_gen_thread = threading.Event()
+        self.__data_gen_thread = threading.Thread(target=self.__data_gen)
+
+    def __data_gen(self):
+        sample_period = 1 / self.fs
+        while not self.__stop_data_gen_thread.is_set():
+            start_time = time.time()
+            self._sin_queue.put(
+                (
+                    self.a_sin
+                    * np.sin(2 * np.pi * self.f_sin * self.i_sin / self.fs),
+                    time.time(),
+                )
+            )
+            self.i_sin = (
+                self.i_sin + 1 if self.i_sin < self.fs / self.f_sin else 0
+            )
+            self._cos_queue.put(
+                (
+                    self.a_cos
+                    * np.cos(2 * np.pi * self.f_cos * self.i_cos / self.fs),
+                    time.time(),
+                )
+            )
+            self.i_cos = (
+                self.i_cos + 1 if self.i_cos < self.fs / self.f_cos else 0
+            )
+            self._rand_queue.put(
+                (
+                    self.rng.integers(
+                        self.rand_min, self.rand_max, endpoint=True
+                    ),
+                    time.time(),
+                )
+            )
+            elapsed_time = time.time() - start_time
+            if elapsed_time < sample_period:
+                time.sleep(sample_period - elapsed_time)
+
+    @property
+    def sin(self):
+        return self._sin_queue.get()
+
+    @property
+    def cos(self):
+        return self._cos_queue.get()
+
+    @property
+    def rand(self):
+        return self._rand_queue.get()
+
+    def start(self):
+        if not self.__data_gen_thread.is_alive():
+            self.__stop_data_gen_thread.clear()
+            self._sin_queue = queue.Queue()
+            self._cos_queue = queue.Queue()
+            self._rand_queue = queue.Queue()
+            self.__data_gen_thread.start()
+
+    def stop(self):
+        if self.__data_gen_thread.is_alive():
+            self.__stop_data_gen_thread.set()
+            self.__data_gen_thread.join()
+
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.stop()
+```
+{: file='simulated_device.py'}
+
+`SimulatedDevice` produces three signals: sine wave, cosine wave and signal with random values in a given range.
+Data is produced in a background thread and appended in queues.
+Along with the actual data, there is also a timestamp for each signal sample.
+Controlling how often data is generated is done using `fs` (sampling frequency) parameter in `__init__` method of `SimulatedDevice`.
+Also, there are parameters for controlling the frequencies and amplitudes of the sine wave and cosine wave, and also the range for the random signal.
+
+To read the data, the user can use the simulated device in `with` block, as `SimulatedDevice` is [context manager](https://docs.python.org/3/library/contextlib.html), and inside that block data can be obtained by accessing the `sin`, `cos` and `rand` properties.
+These properties return tuples `(data, timestamp)`.
+Alternatively, instead of using `with` block, the user can call the method `start()` to start the data generation thread, and `stop()` to stop the data generation thread.
+
+Here is an example that reads data from the simulated sensor for 5 seconds:
+
+```python
+import time
+from simulated_device import SimulatedDevice
+
+with SimulatedDevice() as dev:
+    total_run_time = 5  # s
+    start_time = time.time()
+    while time.time() - start_time < total_run_time:
+        sin, ts_sin = dev.sin
+        cos, ts_cos = dev.cos
+        rand, ts_rand = dev.rand
+        print(f"[{ts_sin:.3f}]\tsin:\t{sin:.3f}")
+        print(f"[{ts_cos:.3f}]\tcos:\t{cos:.3f}")
+        print(f"[{ts_rand:.3f}]\trand:\t{rand}")
+```
+{: file='simulated_device_example.py'}
+
+The script produces output similar to the one below:
+
+```
+[1708864546.379]        sin:    0.000
+[1708864546.379]        cos:    1.000
+[1708864546.379]        rand:   1008
+[1708864546.399]        sin:    0.588
+[1708864546.399]        cos:    0.969
+[1708864546.399]        rand:   4177
+[1708864546.420]        sin:    0.951
+[1708864546.420]        cos:    0.876
+[1708864546.420]        rand:   2884
+```
+{: file='simulated device example output'}
+
 ## Real-time data visualization
 
 One of the most comprehensive libraries in Python for creating visualizations, animations and interactive plots in Python is [`matplotlib`](https://matplotlib.org/).
@@ -135,81 +294,3 @@ _Basic concepts in `matplotlib`_
 ### Real-time plotting using `matplotlib`
 
 In this section we will present multiple approaches to perform real-time plotting using `matplotlib` that will eventually lead to the solution used in the real-time plotting module.
-To concentrate on the plotting part, we will use simulated device that will output synthetic data.
-
-```python
-import queue
-import threading
-import time
-import numpy as np
-
-class SimulatedDevice:
-    def __init__(self, seed=None, fs=50, f_sin=5, f_cos=2, a_sin=1, a_cos=1):
-        if f_sin > fs / 2:
-            raise ValueError("sine-wave frequency must be <= fs/2")
-        if f_cos > fs / 2:
-            raise ValueError("cosine-wave frequency must be <= fs/2")
-        self.rng = np.random.default_rng(seed)
-        self.fs = fs
-        self.f_sin = f_sin
-        self.f_cos = f_cos
-        self.a_sin = a_sin
-        self.a_cos = a_cos
-        self.i_sin = 0
-        self.i_cos = 0
-        self._sin_queue = queue.Queue()
-        self._cos_queue = queue.Queue()
-        self._rand_queue = queue.Queue()
-        self.__stop_data_gen_thread = threading.Event()
-        self.__data_gen_thread = threading.Thread(target=self.__data_gen)
-    
-    def __data_gen(self):
-        sample_period = 1 / self.fs
-        while not self.__stop_data_gen_thread.is_set():
-            start_time = time.time()
-            self._sin_queue.put(
-                self.a_sin * np.sin(2 * np.pi * self.f_sin * self.i_sin / self.fs)
-            )
-            self.i_sin = self.i_sin + 1 if self.i_sin < self.fs / self.f_sin else 0
-            self._cos_queue.put(
-                self.a_cos * np.cos(2 * np.pi * self.f_cos * self.i_cos / self.fs)
-            )
-            self.i_cos = self.i_cos + 1 if self.i_cos < self.fs / self.f_cos else 0
-            self._rand_queue.put(self.rng.integers(1000, 5000, endpoint=True))
-            elapsed_time = time.time() - start_time
-            if elapsed_time < sample_period:
-                time.sleep(sample_period - elapsed_time)
-    
-    @property
-    def sin(self):
-        return self._sin_queue.get()
-
-    @property
-    def cos(self):
-        return self._cos_queue.get()
-
-    @property
-    def rand(self):
-        return self._rand_queue.get()
-    
-    def start(self):
-        if self.__data_gen_thread.is_alive():
-            raise RuntimeError("data generation thread is already running")
-        self.__stop_data_gen_thread.clear()
-        self._sin_queue = queue.Queue()
-        self._cos_queue = queue.Queue()
-        self._rand_queue = queue.Queue()
-        self.__data_gen_thread.start()
-    
-    def stop(self):
-        self.__stop_data_gen_thread.set()
-        self.__data_gen_thread.join()
-    
-    def __enter__(self):
-        self.start()
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.stop()
-```
-{: file='simulated_device.py'}
