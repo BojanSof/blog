@@ -378,7 +378,12 @@ print(f"Mean FPS: {np.mean(fps)}")
 ```
 {: file='funcanimation_example1.py'}
 
-This example creates a figure with 3 subplots.
+This example creates a figure with 3 subplots, as shown on the image below.
+
+![Real-time plotting example 1](/assets/img/pyrtkit/animation-example-1.svg){: .light}
+![Real-time plotting example 1](/assets/img/pyrtkit/animation-example-1-dark.svg){: .dark}
+_Real-time plotting example 1_
+
 The `FuncAnimation` calls the function `visualize`, which plots a maximum of `num_points` points on the subplots.
 We also try to measure and estimate the number of frames per second.
 
@@ -475,7 +480,12 @@ print(f"Mean FPS: {np.mean(fps)}")
 ```
 {: file='funcanimation_example2.py'}
 
+The figure window is shown on the image below.
 This example, on my machine achieves mean FPS of `48.25`.
+
+![Real-time plotting example 2](/assets/img/pyrtkit/animation-example-2.svg){: .light}
+![Real-time plotting example 2](/assets/img/pyrtkit/animation-example-2-dark.svg){: .dark}
+_Real-time plotting example 2_
 
 So we increased the FPS by a factor of nearly 10.
 That was achieved with:
@@ -514,7 +524,7 @@ So basically, we need to implement the following steps to create real-time plots
         3. Update the figure on the screen
     2. Handle GUI events
 
-The same example that we've done with `FuncAnimation` can be rewritten like it is shown below:
+Example 2 that we've done with `FuncAnimation` can be rewritten like it is shown below:
 
 ```python
 import time
