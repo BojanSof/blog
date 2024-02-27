@@ -492,3 +492,124 @@ That was achieved with:
 However, utilizing `FuncAnimation` requires the user to give the handling of the main thread.
 As `matplotlib` utilizes GUI frameworks when interactive backends are used, these frameworks require being run from the main thread.
 If you refer to the examples above, we can see that the lines after `plt.show()` are executed only when the figure window is closed.
+
+To overcome this problems, we will throw out the usage of `FuncAnimation`, by understanding how it is implemented.
+This will give us more flexibility and make it easier to implement `matplotlib` in GUI applications.
+
+#### Using custom loop
+
+The [documentation](https://matplotlib.org/stable/api/animation_api.html#funcanimation) for `matplotlib.animation` gives some ideas how `FuncAnimation` is implemented.
+We need to manually write the loop which does the event handling and redrawing the figure.
+
+So basically, we need to implement the following steps to create real-time plots using `matplotlib`, by utilizing blitting:
+
+1. Create figure and axes
+2. Set the properties of the figure and the axes (axes labels, titles, ticks, etc.)
+3. Store the background
+4. Create all artists
+5. In loop:
+    1. If data to visualize has changed
+        1. Restore the cached background
+        2. Update the artists, by modifying the data they need to visualize
+        3. Update the figure on the screen
+    2. Handle GUI events
+
+The same example that we've done with `FuncAnimation` can be rewritten like it is shown below:
+
+```python
+import time
+import numpy as np
+from matplotlib import pyplot as plt
+
+from simulated_device import SimulatedDevice
+
+dev = SimulatedDevice(fs=50, f_sin=5, f_cos=5)
+
+# for benchmarking
+fps = []
+
+# 1. Create figure and axes
+fig, axs = plt.subplots(3, 1, figsize=(8, 8), constrained_layout=True)
+
+# 2. Set the properties of the figure and the axes
+num_points = 50
+for ax in axs:
+    ax.set_xlim([0, num_points - 1])
+for ax in axs:
+    ax.set_xticks([0, num_points / 2, num_points])
+axs[0].set_title("sin")
+axs[1].set_title("cos")
+axs[2].set_title("rand")
+axs[0].set_ylim([-1.01, 1.01])
+axs[1].set_ylim([-1.01, 1.01])
+axs[2].set_ylim([999, 5001])
+
+# Open the figure window
+plt.show(block=False)
+
+# 3. Store background
+# draw the background
+fig.canvas.draw()
+# store the background
+bg = fig.canvas.copy_from_bbox(fig.bbox)
+
+# 4. create artists
+x_sin = num_points * [""]
+y_sin = num_points * [np.nan]
+x_cos = num_points * [""]
+y_cos = num_points * [np.nan]
+x_rand = num_points * [""]
+y_rand = num_points * [np.nan]
+
+sin_artist = axs[0].plot(y_sin)[0]
+cos_artist = axs[1].plot(y_cos)[0]
+rand_artist = axs[2].plot(y_rand)[0]
+
+
+def update_figure():
+    global y_sin, y_cos, y_rand
+    # read data
+    sin, t_sin = dev.sin
+    cos, t_cos = dev.cos
+    rand, t_rand = dev.rand
+    y_sin.append(sin)
+    y_cos.append(cos)
+    y_rand.append(rand)
+    y_sin = y_sin[-num_points:]
+    y_cos = y_cos[-num_points:]
+    y_rand = y_rand[-num_points:]
+    sin_artist.set_ydata(y_sin)
+    cos_artist.set_ydata(y_cos)
+    rand_artist.set_ydata(y_rand)
+    axs[0].draw_artist(sin_artist)
+    axs[1].draw_artist(cos_artist)
+    axs[2].draw_artist(rand_artist)
+
+
+dev.start()
+# 5. Main loop
+plot_running = True
+while plot_running:
+    # check if figure window is closed
+    if not plt.fignum_exists(fig.number):
+        plot_running = False
+    else:
+        start_time = time.time()
+        # 5.1.1. Restore cache background
+        fig.canvas.restore_region(bg)
+        # 5.1.2. Update artists
+        update_figure()
+        # 5.1.3. Redraw figure
+        # # (state is already updated, but on-screen appearance is not)
+        fig.canvas.blit(fig.bbox)
+        fps.append(1 / (time.time() - start_time))
+        # 5.2 Handle events
+        fig.canvas.flush_events()
+dev.stop()
+
+print(f"Mean FPS: {np.mean(fps)}")
+```
+{: file='custom_loop_example.py'}
+
+On my machine, we get `~60` FPS.
+Please note that the FPS is bounded because the data reading is blocking the plotter loop.
