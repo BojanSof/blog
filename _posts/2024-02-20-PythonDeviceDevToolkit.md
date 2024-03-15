@@ -621,5 +621,228 @@ print(f"Mean FPS: {np.mean(fps)}")
 ```
 {: file='custom_loop_example.py'}
 
-On my machine, we get `~60` FPS.
+On my machine, the FPS is `~60`.
 Please note that the FPS is bounded because the data reading is blocking the plotter loop.
+
+One drawback of this solution is that the figure window must not be resized.
+This can be tackled by using the `draw_event`.
+We will comment on this point when presenting the module for real-time plotting.
+
+### Module for real-time visualization
+
+The module for real-time visualization aims to provide easy way to create and update multiple kinds of plots, using `matplotlib`.
+It is realized with two classes:
+- `Plotter` which implements the logic for creating and updating figures and artists, and
+- `PlotterManager`, which creates new process using Python's [`multiprocessing`](https://docs.python.org/3/library/multiprocessing.html) for the plotting window, and communicates with the main process using [`multiprocessing.Queue`](https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue).
+It holds instance of `Plotter` class.
+
+The reason for creating new process is that `matplotlib` event handling loop must be executed on the main thread.
+The processes are two separate python interpreter instantations, which don't share any data, thus we utilize `multiprocessing.Queue` to enable communication between them.
+
+As we are utilizing `multiprocessing`, we've lost easy access to `matplotlib` artists creation.
+We can't just simply create artists in the main process and send them to the process where `Plotter` is executing.
+To overcome this, the module for real-time visualization will have two ways of using it:
+
+1. By subclassing and defining methods for creating and updating artists, and
+2. By providing a subset of functions for creating line plots, bar plots and other common plots.
+
+#### Subclassing approach
+
+This approach is based on having `PlotterBase` class, which can be subclassed by the user to create concrete `Plotter` class.
+There are two main methods that need to be implemented for the `Plotter` to work:
+- `init` method which is intended for creating the figures and artists, and
+- `process_data_queue` method, which updates the artists with new data.
+
+The implementations for `PlotterBase` and `PlotterManager` are given below:
+
+```python
+import multiprocessing as mp
+import time
+import warnings
+
+import matplotlib
+
+matplotlib.use("Qt5Agg")
+import matplotlib.pyplot as plt  # noqa
+
+
+class PlotterManager:
+    def __init__(self, plotter, fps=None):
+        self.data_queue = mp.Queue()
+        self.stop_event = mp.Event()
+        self.plotter_worker = plotter
+        self.process = mp.Process(
+            target=self.plotter_worker,
+            args=(self.data_queue, self.stop_event, fps),
+        )
+        self.process.start()
+
+    def stop(self):
+        self.stop_event.set()
+        if self.process is not None and self.process.is_alive():
+            self.process.join(timeout=5)
+            if self.process.exitcode is None:
+                warnings.warn("Couldn't stop plotter window process")
+        else:
+            while not self.data_queue.empty():
+                self.data_queue.get_nowait()
+
+    def is_alive(self):
+        return self.process.is_alive()
+
+    def add_data(self, data):
+        self.data_queue.put(data)
+
+
+class PlotterBase:
+    def __call__(self, data_queue, stop_event, fps):
+        self.data_queue = data_queue
+        self.stop_event = stop_event
+        self.figs = []
+        self.axs = {}
+        self.init()
+        if len(self.figs) == 0:
+            raise RuntimeError(
+                "No figure added, "
+                "ensure `add_figure` is called at least once in `init`"
+            )
+        t_start = time.time()
+        while not self.stop_event.is_set():
+            self.process_data_queue()
+            self.process_events()
+            if fps is not None and time.time() - t_start < 1 / fps:
+                continue
+            self.update_figures()
+            t_start = time.time()
+
+    def init(self):
+        raise NotImplementedError("init method not implemented")
+
+    def process_data_queue(self):
+        raise NotImplementedError("process_data_queue method not implemented")
+
+    def add_figure_and_artists(self, fig, artists):
+        plt.show(block=False)
+        plt.pause(.1)
+        fig.canvas.draw()
+        bg = fig.canvas.copy_from_bbox(fig.bbox)
+        self.figs.append([fig, bg, artists])
+        fig.canvas.mpl_connect("draw_event", self.on_draw)
+        # exclude artists from regular redraw
+        for artist in artists:
+            artist.set_animated(True)
+
+    def update_figures(self):
+        for fig, bg, artists in self.figs:
+            fig.canvas.restore_region(bg)
+            for artist in artists:
+                fig.draw_artist(artist)
+            fig.canvas.blit(fig.bbox)
+
+    def process_events(self):
+        is_any_plot_present = False
+        for fig, _, _ in self.figs:
+            if plt.fignum_exists(fig.number):
+                is_any_plot_present = True
+                fig.canvas.flush_events()
+        if not is_any_plot_present:
+            self.stop_event.set()
+
+    def on_draw(self, event):
+        if event is not None:
+            bg = event.canvas.copy_from_bbox(event.canvas.figure.bbox)
+            i_fig = next(
+                i for i, (fig, _, _) in enumerate(self.figs)
+                if fig == event.canvas.figure
+            )
+            self.figs[i_fig][1] = bg
+```
+{: file='plotter_base.py'}
+
+The `PlotterManager` class receives instance compatible with `PlotterBase` class, called `plotter`, and starts new process which executes the `__call__` method of the `plotter` type.
+It provides function for sending data to the plotter process, `add_data`, which puts data in the queue used for process communication.
+
+The `PlotterBase` class provides two methods that need to be overridden by the user mentioned above, `init` and `process_data_queue`, and multiple methods, mainly used internally by the plotter.
+There is a function called `add_figure_and_artists` that should be called in the `init` method, which initializes the properties of the figure and the artists for real-time visualization using blitting.
+That includes storing the figure background for the blitting, connecting function to be executed when the `draw_event` fires, used for updating the figure background when the window is resized for example and setting the corresponding artists to be animated.
+[Animated artists](https://matplotlib.org/stable/api/_as_gen/matplotlib.artist.Artist.set_animated.html) are artists which are excluded from the regular drawing of the figure.
+This needs to be done so the `draw_event` doesn't store the artists as part of the new background.
+
+The main loop of the plotter, explained in the section [Using custom loop](#using-custom-loop), is implemented in the `__call__` method.
+It is executed while the window is open, or the `PlotManager` object doesn't request `stop`.
+
+Optionally, `fps` can be specified which just limits how often the figures are updated.
+
+The same example as in [the previous sections](#real-time-plotting-using-matplotlib) can be implemented with the following code:
+
+```python
+import multiprocessing as mp
+import time
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+from plotter_base import PlotterManager, PlotterBase
+from simulated_device import SimulatedDevice
+
+
+# create custom PlotterBase
+class Plotter(PlotterBase):
+    def init(self):
+        fig, axs = plt.subplots(3, 1, figsize=(8, 8), constrained_layout=True)
+
+        self.num_points = 50
+        self.y_sin = self.num_points * [np.nan]
+        self.y_cos = self.num_points * [np.nan]
+        self.y_rand = self.num_points * [np.nan]
+
+        # create artists
+        self.sin_artist = axs[0].plot(self.y_sin)[0]
+        self.cos_artist = axs[1].plot(self.y_cos)[0]
+        self.rand_artist = axs[2].plot(self.y_rand)[0]
+
+        # modify axes properties
+        for ax in axs:
+            ax.set_xlim([0, self.num_points - 1])
+        for ax in axs:
+            ax.set_xticks([0, self.num_points / 2, self.num_points])
+        axs[0].set_title("sin")
+        axs[1].set_title("cos")
+        axs[2].set_title("rand")
+        axs[0].set_ylim([-1.01, 1.01])
+        axs[1].set_ylim([-1.01, 1.01])
+        axs[2].set_ylim([999, 5001])
+
+        # ensure this is called!
+        self.add_figure_and_artists(
+            fig, [self.sin_artist, self.cos_artist, self.rand_artist]
+        )
+
+    def process_data_queue(self):
+        while self.data_queue.qsize() > 0:
+            sin, cos, rand = self.data_queue.get()
+            self.y_sin.append(sin)
+            self.y_cos.append(cos)
+            self.y_rand.append(rand)
+            self.y_sin = self.y_sin[-self.num_points:]
+            self.y_cos = self.y_cos[-self.num_points:]
+            self.y_rand = self.y_rand[-self.num_points:]
+            self.sin_artist.set_ydata(self.y_sin)
+            self.cos_artist.set_ydata(self.y_cos)
+            self.rand_artist.set_ydata(self.y_rand)
+
+
+if __name__ == "__main__":
+    mp.freeze_support()
+    plotter_manager = PlotterManager(Plotter())
+    with SimulatedDevice(fs=50, f_sin=5, f_cos=5) as dev:
+        total_run_time = 5  # s
+        start_time = time.time()
+        while time.time() - start_time < total_run_time:
+            sin, ts_sin = dev.sin
+            cos, ts_cos = dev.cos
+            rand, ts_rand = dev.rand
+            plotter_manager.add_data((sin, cos, rand))
+    plotter_manager.stop()
+```
+{: file='plotter_base_example.py'}
