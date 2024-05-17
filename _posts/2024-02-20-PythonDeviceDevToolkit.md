@@ -48,7 +48,7 @@ We will show examples by utilizing Wi-Fi, BLE and USB serial communication to re
 
 The first step for developing the software is establishing connection with the device.
 As mentioned previously, there are multiple protocols that the device can utilize to communicate with another device, for example computer or mobile phone.
-This post concentrates on 3 protocols mainly used for communication between the device that we are developing and another device that should utilize the data: USB communication, Bluetooth Low Energy and TCP/IP.
+This post concentrates on 2 protocols used for communication between the device that we are developing and another device that should utilize the data: USB communication and Bluetooth Low Energy.
 There are few well-developed Python libraries which allow cross-platform usage of these protocols.
 
 ### USB
@@ -57,15 +57,361 @@ By USB communication it is assumed that the USB controller of the device is conf
 [PySerial](https://pyserial.readthedocs.io/en/latest/index.html) is Python library that encapsulates the access to the serial port, and works on multiple platforms, including Windows, Linux and MacOS.
 The [short introduction](https://pyserial.readthedocs.io/en/latest/shortintro.html) demonstrates the basic usage of the library.
 
+We can write class `Serial` that can allow us to easily receive the data from the serial port.
+
+```python
+import threading
+
+import serial
+import serial.tools.list_ports as ports
+
+
+class Serial:
+    def __init__(self):
+        self.port = None
+        self.data_thread_stop_event = threading.Event()
+        self.data_thread = None
+        self.on_data = None
+
+    def get_found_devices(self):
+        com_ports = ports.comports()
+        return [com_port.device for com_port in com_ports]
+
+    def open(self, port, on_data, **port_kwargs):
+        self.port = serial.Serial(port=port, **port_kwargs)
+        if not self.port.is_open:
+            self.port = None
+            return False
+        else:
+            self.on_data = on_data
+            self.data_thread = threading.Thread(
+                target=self._data_read,
+                args=(self.port, self.data_thread_stop_event),
+            )
+            self.data_thread.start()
+            return True
+
+    def close(self):
+        if self.port is not None:
+            self.data_thread_stop_event.set()
+            self.data_thread.join()
+            self.port.close()
+            self.port = None
+            self.on_data = None
+            return True
+        return False
+
+    def is_open(self):
+        if self.port is not None:
+            return self.port.is_open
+        return False
+
+    def _data_read(self, port, stop_event):
+        while not stop_event.is_set() and port.is_open:
+            data = port.read_all()
+            if len(data) > 0:
+                self.on_data(data)
+```
+
+The `Serial` class allows us to list the current serial ports connected to the computer, and also open, close and read port data.
+When openning the port, the user provides callback that is called each time new data is received.
+The reading of the port data is done in a separate thread, which constantly reads all currently available data on the port and calls the user-provided callback function.
+
 ### Bluetooth Low Energy
 
 [Bleak](https://bleak.readthedocs.io/en/latest/) is probably the best cross-platform BLE Python library.
 The [usage](https://bleak.readthedocs.io/en/latest/usage.html) page of the docs demonstrates the basic usage of the library.
 As the library utilizes [asynchronous I/O](https://docs.python.org/3/library/asyncio.html), it may be a bit difficult for novice developers to incorporate it in their projects.
 
-### TCP/IP
+We can write `Ble` class that will allow us to easily utilize the BLE module:
 
-For TCP/IP communication, Python already provides [socket](https://docs.python.org/3/library/socket.html) library.
+```python
+import asyncio
+import enum
+import threading
+
+from bleak import BleakScanner, BleakClient
+
+
+class BleStatus(enum.Enum):
+    Connecting = enum.auto()
+    Connected = enum.auto()
+    Disconnecting = enum.auto()
+
+
+class BleDevice:
+    def __init__(self, name, address, rssi, uuids, manufacturer_data):
+        self.name = name
+        self.address = address
+        self.rssi = rssi
+        self.uuids = uuids
+        self.manufacturer_data = manufacturer_data
+        self._device_hndl = None
+        self._client = None
+
+    def __str__(self):
+        return self.name if self.name is not None else ""
+
+
+class BleCharacteristic:
+    def __init__(self, uuid, properties):
+        self.uuid = uuid
+        self.properties = properties
+
+
+class BleService:
+    def __init__(self, uuid, characteristics):
+        self.uuid = uuid
+        self.characteristics = characteristics
+
+
+class Ble:
+    def __init__(self):
+        self.found_devices = {}
+        self.on_device = None
+        self.scanning = False
+        self.scan_stop_event = asyncio.Event()
+
+        self.on_connect = {}
+        self.on_disconnect = {}
+        self.status_devices = {}
+        self.disconnect_events = {}
+        self.connected_devices = {}
+
+        self.event_loop = asyncio.new_event_loop()
+        self.event_loop_thread = threading.Thread(
+            target=self._asyncloop, daemon=True
+        )
+        self.event_loop_thread.start()
+
+    def __del__(self):
+        for dev in self.connected_devices.values():
+            self.disconnect(dev)
+        self.event_loop.call_soon_threadsafe(self.event_loop.stop)
+        self.event_loop_thread.join()
+
+    def start_scan(self, on_device):
+        self.found_devices = {}  # clear previously found devices
+        self.on_device = on_device
+        self.scan_stop_event.clear()
+        asyncio.run_coroutine_threadsafe(
+            self._bluetooth_scan(self.scan_stop_event), self.event_loop
+        )
+        self.scanning = True
+
+    def stop_scan(self):
+        if self.scanning:
+            self.event_loop.call_soon_threadsafe(self.scan_stop_event.set)
+            self.scanning = False
+
+    def is_scanning(self):
+        return self.scanning
+
+    def get_found_devices(self):
+        return list(self.found_devices.values())
+
+    def connect(self, dev, on_connect, on_disconnect):
+        if not self.is_connected(dev):
+            if on_connect is not None:
+                self.on_connect[dev.address] = on_connect
+            if on_disconnect is not None:
+                self.on_disconnect[dev.address] = on_disconnect
+            self.disconnect_events[dev.address] = asyncio.Event()
+            self.status_devices[dev.address] = BleStatus.Connecting
+            asyncio.run_coroutine_threadsafe(
+                self._bluetooth_connect(
+                    dev, self.disconnect_events[dev.address]
+                ),
+                self.event_loop,
+            )
+
+    def disconnect(self, dev):
+        if self.is_connected(dev):
+            self.status_devices[dev.address] = BleStatus.Disconnecting
+            self.event_loop.call_soon_threadsafe(
+                self.disconnect_events[dev.address].set
+            )
+
+    def is_connected(self, dev):
+        return dev.address in self.connected_devices
+
+    def get_connected_devices(self):
+        return list(self.connected_devices.values())
+
+    def get_status(self, dev):
+        if dev.address in self.status_devices:
+            return self.status_devices[dev.address]
+        else:
+            return None
+
+    def get_services_and_characteristics(self, dev):
+        if not self.is_connected(dev):
+            services_collection = None
+        else:
+            services_collection = []
+            client = self.connected_devices[dev.address]._client
+            for _, service in client.services.services.items():
+                service_characteristics = []
+                for characteristic in service.characteristics:
+                    ble_characteristic = BleCharacteristic(
+                        uuid=characteristic.uuid,
+                        properties=characteristic.properties,
+                    )
+                    service_characteristics.append(ble_characteristic)
+                ble_service = BleService(
+                    uuid=service.uuid, characteristics=service_characteristics
+                )
+                services_collection.append(ble_service)
+        return services_collection
+
+    def read_characteristic(self, dev, char_uuid):
+        if self.is_connected(dev):
+            client = self.connected_devices[dev.address]._client
+            chars = list(client.services.characteristics.values())
+            chars_uuids = [char.uuid for char in chars]
+            chars_properties = [char.properties for char in chars]
+            if char_uuid in chars_uuids:
+                i_char = chars_uuids.index(char_uuid)
+                if "read" in chars_properties[i_char]:
+                    future = asyncio.run_coroutine_threadsafe(
+                        self._bluetooth_read(client, char_uuid),
+                        self.event_loop,
+                    )
+                    return future.result()
+        return None
+
+    def write_characteristic(self, dev, char_uuid, data, response):
+        if self.is_connected(dev):
+            client = self.connected_devices[dev.address]._client
+            chars = list(client.services.characteristics.values())
+            chars_uuids = [char.uuid for char in chars]
+            chars_properties = [char.properties for char in chars]
+            if char_uuid in chars_uuids:
+                i_char = chars_uuids.index(char_uuid)
+                prop = "write" if response else "write-without-response"
+                if prop in chars_properties[i_char]:
+                    future = asyncio.run_coroutine_threadsafe(
+                        self._bluetooth_write(
+                            client, char_uuid, data, response
+                        ),
+                        self.event_loop,
+                    )
+                    return future.result()
+        return None
+
+    def start_notifications(self, dev, char_uuid, on_data):
+        if self.is_connected(dev):
+            client = self.connected_devices[dev.address]._client
+            chars = list(client.services.characteristics.values())
+            chars_uuids = [char.uuid for char in chars]
+            chars_properties = [char.properties for char in chars]
+            if char_uuid in chars_uuids:
+                i_char = chars_uuids.index(char_uuid)
+                if "notify" in chars_properties[i_char]:
+                    asyncio.run_coroutine_threadsafe(
+                        self._bluetooth_start_notify(
+                            client, char_uuid, on_data
+                        ),
+                        self.event_loop,
+                    )
+                    return True
+        return False
+
+    def stop_notifications(self, dev, char_uuid):
+        if self.is_connected(dev):
+            client = self.connected_devices[dev.address]._client
+            chars = list(client.services.characteristics.values())
+            chars_uuids = [char.uuid for char in chars]
+            chars_properties = [char.properties for char in chars]
+            if char_uuid in chars_uuids:
+                i_char = chars_uuids.index(char_uuid)
+                if "notify" in chars_properties[i_char]:
+                    asyncio.run_coroutine_threadsafe(
+                        self._bluetooth_stop_notify(client, char_uuid),
+                        self.event_loop,
+                    )
+                    return True
+        return False
+
+    async def _bluetooth_scan(self, stop_event):
+        async with BleakScanner(
+            detection_callback=self._detection_callback,
+        ):
+            await stop_event.wait()
+
+    def _detection_callback(self, device, advertisement_data):
+        dev = BleDevice(
+            name=advertisement_data.local_name,
+            address=device.address,
+            rssi=advertisement_data.rssi,
+            uuids=advertisement_data.service_uuids,
+            manufacturer_data=advertisement_data.manufacturer_data,
+        )
+        dev._device_hndl = device
+        self.found_devices[device.address] = dev
+        if self.on_device is not None:
+            self.on_device(dev)
+
+    async def _bluetooth_connect(self, device, disconnect_event):
+        async with BleakClient(
+            device._device_hndl,
+            self._disconnect_callback,
+        ) as client:
+            device._client = client
+            self.connected_devices[client.address] = device
+            self.status_devices[client.address] = BleStatus.Connected
+            if client.address in self.on_connect:
+                self.on_connect[client.address]()
+            await disconnect_event.wait()
+            del self.disconnect_events[client.address]
+
+    def _disconnect_callback(self, client):
+        if client.address in self.disconnect_events:
+            self.disconnect_events[client.address].set()
+        del self.connected_devices[client.address]
+        del self.status_devices[client.address]
+        if client.address in self.on_connect:
+            del self.on_connect[client.address]
+        if client.address in self.on_disconnect:
+            self.on_disconnect[client.address]()
+            del self.on_disconnect[client.address]
+
+    async def _bluetooth_read(self, client, uuid):
+        return await client.read_gatt_char(uuid)
+
+    async def _bluetooth_write(self, client, uuid, data, response):
+        return await client.write_gatt_char(uuid, data, response)
+
+    async def _bluetooth_start_notify(self, client, uuid, on_data):
+        await client.start_notify(uuid, lambda _, data: on_data(data))
+
+    async def _bluetooth_stop_notify(self, client, uuid):
+        await client.stop_notify(uuid)
+
+    def _asyncloop(self):
+        asyncio.set_event_loop(self.event_loop)
+        self.event_loop.run_forever()
+```
+
+To make it possible to use bleak functionalities in regular sync code, new thread is created which executes `asyncio` event loop.
+The idea is to submit the coroutines based on bleak code in the event-loop executing in this new thread.
+Then, the user can use regular functions to utilize BLE communication.
+
+The class contains methods for discovering BLE devices, connecting to BLE devices and performing BLE operations on connected devices.
+
+To start the discovering process, `start_scan` function can be called, which optionally accepts user-provided callback function that is called any time new BLE device is discovered or advertisement data of already found device is changed.
+To stop the discovery process, `stop_scan` can be used.
+Obtaining list of all the discovered devices can be done in any moment using `get_found_devices`.
+
+After the discovery process is done, we can connect to a discovered device.
+For that purpose, we use the `connect` function, which needs to be provided with a device obtained with the discovery process, and optionally callback functions can be passed that will be called on connect or on disconnect.
+The state of the connection with a specific device can be checked by calling `get_status` with the device as parameter.
+State of the connection can be `Connecting`, `Disconnecting` or `Connected`.
+
+After connection is established, we can perform BLE operations with the device.
+We can obtain list of all the services and characteristics of the device by calling `get_services_and_characteristics`, which returns a list of `BleService` objects.
+There are functions for reading and writing characteristic, `read_characteristic` and `write_characteristic`, which need the UUID of the characteristic that we want to perform the operation on.
+It is also possible to start notifications on a given characteristic, by calling `start_notifications`, which accepts callback function which is called when new data is received from the device.
 
 ### Simulated device
 
@@ -644,7 +990,7 @@ We can't just simply create artists in the main process and send them to the pro
 To overcome this, the module for real-time visualization will have two ways of using it:
 
 1. By subclassing and defining methods for creating and updating artists, and
-2. By providing a subset of functions for creating line plots, bar plots and other common plots.
+2. By providing a set of functions for creating line plots, bar plots and other common plots.
 
 #### Subclassing approach
 
@@ -846,3 +1192,6 @@ if __name__ == "__main__":
     plotter_manager.stop()
 ```
 {: file='plotter_base_example.py'}
+
+#### Providing set of functions for creating common plot types
+
