@@ -112,6 +112,7 @@ class Serial:
             if len(data) > 0:
                 self.on_data(data)
 ```
+{: file='serial.py'}
 
 The `Serial` class allows us to list the current serial ports connected to the computer, and also open, close and read port data.
 When openning the port, the user provides callback that is called each time new data is received.
@@ -392,6 +393,7 @@ class Ble:
         asyncio.set_event_loop(self.event_loop)
         self.event_loop.run_forever()
 ```
+{: file='ble.py'}
 
 To make it possible to use bleak functionalities in regular sync code, new thread is created which executes `asyncio` event loop.
 The idea is to submit the coroutines based on bleak code in the event-loop executing in this new thread.
@@ -1195,3 +1197,639 @@ if __name__ == "__main__":
 
 #### Providing set of functions for creating common plot types
 
+To make it easier to create real-time plots, we can create functions that will create some of the most common plots.
+This is presented in the solution below.
+
+```python
+
+import enum
+import multiprocessing as mp
+import time
+import threading
+import queue
+import warnings
+
+import matplotlib.artist
+import matplotlib.collections
+import matplotlib.container
+import numpy as np
+from numpy.typing import ArrayLike
+import matplotlib
+
+matplotlib.use("QtAgg")
+import matplotlib.pyplot as plt  # noqa
+
+
+class PlotterManager:
+    def __init__(self, plotter, fps):
+        self.cmd_queue = mp.Queue()
+        self.data_queue = mp.Queue()
+        self.stop_event = mp.Event()
+        self.is_plot_closed = mp.Event()
+        self.plotter_worker = plotter
+        self.process = mp.Process(
+            target=self.plotter_worker,
+            args=(
+                self.cmd_queue,
+                self.data_queue,
+                self.stop_event,
+                self.is_plot_closed,
+                fps,
+            ),
+        )
+        self.process.start()
+
+    def show(self):
+        self.cmd_queue.put(("show",))
+
+    def close(self):
+        self.cmd_queue.put(("close",))
+
+    def stop(self):
+        self.stop_event.set()
+        if self.process is not None and self.process.is_alive():
+            self.cmd_queue.put(None)
+            self.data_queue.put(None)
+            self.process.join(timeout=5)
+            if self.process.exitcode is None:
+                warnings.warn("Couldn't stop plotter window process")
+
+    def is_alive(self):
+        return self.process.is_alive()
+
+    def is_shown(self):
+        return not self.is_plot_closed.is_set()
+
+    def add_data(self, data):
+        self.data_queue.put(data)
+
+    def create_figure(self, fig_id, grid_rows, grid_cols, **kwargs):
+        grid_size = (grid_rows, grid_cols)
+        self.cmd_queue.put(("create_fig", fig_id, kwargs, grid_size))
+
+    def create_axis(self, axis_id, fig_id, i_row, i_col, num_rows, num_cols):
+        self.cmd_queue.put(
+            (
+                "create_axis",
+                axis_id,
+                fig_id,
+                (i_row, i_col),
+                (num_rows, num_cols),
+            )
+        )
+
+    def modify_axis(
+        self,
+        axis_id,
+        xlim,
+        ylim,
+        title,
+        xlabel,
+        ylabel,
+        xticks,
+        xticklabels,
+        yticks,
+        yticklabels,
+        legend,
+    ):
+        self.cmd_queue.put(
+            (
+                "modify_axis",
+                axis_id,
+                xlim,
+                ylim,
+                title,
+                xlabel,
+                ylabel,
+                xticks,
+                xticklabels,
+                yticks,
+                yticklabels,
+                legend,
+            )
+        )
+
+    def create_line_plot(self, artist_id, axis_id, size, **kwargs):
+        self.cmd_queue.put(
+            ("create_line_plot", artist_id, axis_id, size, kwargs)
+        )
+
+    def create_scatter_plot(self, artist_id, axis_id, num_points, **kwargs):
+        self.cmd_queue.put(
+            ("create_scatter_plot", artist_id, axis_id, num_points, kwargs)
+        )
+
+    def create_bar_plot(self, artist_id, axis_id, num_bars, **kwargs):
+        self.cmd_queue.put(
+            ("create_bar_plot", artist_id, axis_id, num_bars, kwargs)
+        )
+
+    def create_image_plot(self, artist_id, axis_id, img_shape, cbar, **kwargs):
+        self.cmd_queue.put(
+            ("create_image_plot", artist_id, axis_id, img_shape, cbar, kwargs)
+        )
+
+
+class PlotType(enum.Enum):
+    Line = (enum.auto(),)
+    Scatter = (enum.auto(),)
+    Bar = (enum.auto(),)
+    Text = (enum.auto(),)
+    Image = enum.auto()
+
+
+class Plotter:
+    def __call__(self, cmd_queue, data_queue, stop_event, plot_closed_event, fps=None):
+        self.cmd_queue = cmd_queue
+        self.data_queue = data_queue
+        self.stop_event = stop_event
+        self.plot_closed_event = plot_closed_event
+        self.figs = {}
+        self.axs = {}
+        self.artists = {}
+        self.bgs = {}
+        self.event_processing = False
+        t_start = time.time()
+        while not self.stop_event.is_set():
+            self.process_cmd_queue()
+            self.process_data_queue()
+            self.process_events()
+            if fps is not None and time.time() - t_start < 1 / fps:
+                continue
+            self.update_figures()
+            t_start = time.time()
+
+        while self.cmd_queue.get() is not None:
+            self.cmd_queue.get()
+        while self.data_queue.get() is not None:
+            self.data_queue.get()
+
+    def process_cmd_queue(self):
+        while not self.cmd_queue.empty():
+            cmd = self.cmd_queue.get()
+            if cmd is None:
+                pass
+            if cmd[0] == "show":
+                self.show()
+            elif cmd[0] == "close":
+                self.close()
+            elif cmd[0] == "create_fig":
+                fig_id = cmd[1]
+                kwargs = cmd[2]
+                nrows, ncols = cmd[3]
+                self.create_figure(fig_id, nrows, ncols, **kwargs)
+            elif cmd[0] == "create_axis":
+                ax_id = cmd[1]
+                fig_id = cmd[2]
+                irow, icol = cmd[3]
+                nrows, ncols = cmd[4]
+                self.create_axis(ax_id, fig_id, irow, icol, nrows, ncols)
+            elif cmd[0] == "modify_axis":
+                ax_id = cmd[1]
+                xlim = cmd[2]
+                ylim = cmd[3]
+                title = cmd[4]
+                xlabel = cmd[5]
+                ylabel = cmd[6]
+                xticks = cmd[7]
+                xticklabels = cmd[8]
+                yticks = cmd[9]
+                yticklabels = cmd[10]
+                legend = cmd[11]
+                self.modify_axis(
+                    ax_id,
+                    xlim,
+                    ylim,
+                    title,
+                    xlabel,
+                    ylabel,
+                    xticks,
+                    xticklabels,
+                    yticks,
+                    yticklabels,
+                    legend,
+                )
+            elif cmd[0] == "create_line_plot":
+                artist_id = cmd[1]
+                ax_id = cmd[2]
+                size = cmd[3]
+                kwargs = cmd[4]
+                self.create_line_plot(artist_id, ax_id, size, **kwargs)
+            elif cmd[0] == "create_scatter_plot":
+                artist_id = cmd[1]
+                ax_id = cmd[2]
+                num_points = cmd[3]
+                kwargs = cmd[4]
+                self.create_scatter_plot(
+                    artist_id, ax_id, num_points, **kwargs
+                )
+            elif cmd[0] == "create_bar_plot":
+                artist_id = cmd[1]
+                ax_id = cmd[2]
+                num_bars = cmd[3]
+                kwargs = cmd[4]
+                self.create_bar_plot(artist_id, ax_id, num_bars, **kwargs)
+            elif cmd[0] == "create_image_plot":
+                artist_id = cmd[1]
+                ax_id = cmd[2]
+                img_shape = cmd[3]
+                cbar = cmd[4]
+                kwargs = cmd[5]
+                self.create_image_plot(
+                    artist_id, ax_id, img_shape, cbar, **kwargs
+                )
+
+    def process_data_queue(self):
+        while not self.data_queue.empty():
+            data = self.data_queue.get()
+            for artist_id, val in data.items():
+                artist, type = self.artists[artist_id]
+                if type == PlotType.Line:
+                    self.update_line_plot(artist, val)
+                elif type == PlotType.Scatter:
+                    self.update_scatter_plot(artist, val)
+                elif type == PlotType.Bar:
+                    self.update_bar_plot(artist, val)
+                elif type == PlotType.Image:
+                    self.update_image_plot(artist, val)
+
+    def process_events(self):
+        if self.event_processing:
+            is_any_plot_present = False
+            for fig, _, _ in self.figs.values():
+                if plt.fignum_exists(fig.number):
+                    is_any_plot_present = True
+                    fig.canvas.flush_events()
+            if not is_any_plot_present:
+                self.plot_closed_event.set()
+
+    def update_figures(self):
+        for fig_id, (fig, _, artists) in self.figs.items():
+            bg = self.bgs[fig_id]
+            fig.canvas.restore_region(bg)
+            for artist in artists:
+                fig.draw_artist(artist)
+            fig.canvas.blit(fig.bbox)
+
+    def _on_draw(self, event):
+        if event is not None:
+            bg = event.canvas.copy_from_bbox(event.canvas.figure.bbox)
+            fig_id = [
+                id
+                for id, (fig, _, _) in self.figs.items()
+                if fig == event.canvas.figure
+            ][0]
+            self.bgs[fig_id] = bg
+
+    def show(self):
+        plt.show(block=False)
+        for fig_id, (fig, _, _) in self.figs.items():
+            bg = fig.canvas.copy_from_bbox(fig.bbox)
+            self.bgs[fig_id] = bg
+            fig.canvas.mpl_connect("draw_event", self._on_draw)
+        self.plot_closed_event.clear()
+        self.event_processing = True
+
+    def close(self):
+        self.event_processing = False
+        plt.close("all")
+
+    def create_figure(self, fig_id, nrows, ncols, **kwargs):
+        fig = plt.figure(constrained_layout=True, **kwargs)
+        gs = fig.add_gridspec(nrows, ncols)
+        artists = []
+        self.figs[fig_id] = (fig, gs, artists)
+
+    def create_axis(self, ax_id, fig_id, irow, icol, nrows, ncols):
+        fig, gs, _ = self.figs[fig_id]
+        ax = fig.add_subplot(gs[irow : irow + nrows, icol : icol + ncols])
+        self.axs[ax_id] = ax
+
+    def modify_axis(
+        self,
+        ax_id,
+        xlim,
+        ylim,
+        title,
+        xlabel,
+        ylabel,
+        xticks,
+        xticklabels,
+        yticks,
+        yticklabels,
+        legend,
+    ):
+        ax = self.axs[ax_id]
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
+        ax.set_title(title)
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        if xticks is not None:
+            ax.set_xticks(xticks, xticklabels)
+        if yticks is not None:
+            ax.set_yticks(yticks, yticklabels)
+        if legend:
+            ax.legend(loc="upper left")
+
+    def create_line_plot(self, artist_id, ax_id, size, **kwargs):
+        ax = self.axs[ax_id]
+        line = ax.plot(np.full(size, np.nan), **kwargs)[0]
+        self.add_artist(artist_id, ax_id, line, PlotType.Line)
+
+    def create_scatter_plot(self, artist_id, ax_id, num_points, **kwargs):
+        ax = self.axs[ax_id]
+        points = ax.scatter(
+            np.full(num_points, np.nan), np.full(num_points, np.nan), **kwargs
+        )
+        self.add_artist(artist_id, ax_id, points, PlotType.Scatter)
+
+    def create_bar_plot(self, artist_id, ax_id, num_bars, **kwargs):
+        ax = self.axs[ax_id]
+        bars = ax.bar(
+            [i for i in range(num_bars)],
+            [0 for _ in range(num_bars)],
+            **kwargs,
+        )
+        self.add_artist(artist_id, ax_id, bars, PlotType.Bar)
+
+    def create_image_plot(self, artist_id, ax_id, img_shape, cbar, **kwargs):
+        ax = self.axs[ax_id]
+        img = ax.imshow(np.full(img_shape, np.nan), **kwargs)
+        if cbar:
+            plt.colorbar(img, ax=ax)
+        self.add_artist(artist_id, ax_id, img, PlotType.Image)
+
+    def add_artist(self, artist_id, ax_id, artist, type):
+        if type == PlotType.Bar:
+            for real_artist in artist:
+                real_artist.set_animated(True)
+        else:
+            artist.set_animated(True)
+        fig_id = [
+            id
+            for id, (fig, _, _) in self.figs.items()
+            if self.axs[ax_id] in fig.get_children()
+        ][0]
+        _, _, fig_artists = self.figs[fig_id]
+        if type == PlotType.Bar:
+            for real_artist in artist:
+                fig_artists.append(real_artist)
+        else:
+            fig_artists.append(artist)
+        self.artists[artist_id] = artist, type
+
+    def update_line_plot(self, artist, val):
+        values = artist.get_ydata()
+        values = np.roll(values, -1)
+        values[-1] = val
+        artist.set_ydata(values)
+
+    def update_scatter_plot(self, artist, val):
+        values = artist.get_offsets()
+        x_values = values[:, 0]
+        y_values = values[:, 1]
+        x_values = np.roll(x_values, -1)
+        x_values[-1] = val[0]
+        y_values = np.roll(y_values, -1)
+        y_values[-1] = val[1]
+        values = np.c_[x_values, y_values]
+        artist.set_offsets(values)
+
+    def update_bar_plot(self, artist, val):
+        bars = artist
+        for bar, h in zip(bars, val):
+            bar.set_height(h)
+
+    def update_image_plot(self, artist, val):
+        artist.set_data(val)
+```
+{: file='plotter.py'}
+
+To realize this solution, the `Plotter` now has additional queue, called command queue, which is used for sending commands from the `PlotterManager` instance.
+The commands are structured as tuples in which the first value is the command type, and the rest of the values are the arguments for the command.
+The user issues the commands by calling functions on the `PlotterManager` instance.
+The `Plotter` instance processes the command queue regularly and performs actions if there is command present in the queue.
+The actions include:
+- creating figure (`create_figure`), referenced later via the user-provided `fig_id`,
+- creating axis (`create_axis`), on a figure with id `fig_id`, referenced later by its `ax_id`,
+- modifying axis properties (`modify_axis`), on an axis with id `ax_id`, such as title, axes labels, axes ticks, etc.,
+- creating different kinds of plots, referenced by user-provided `artist_id`, including:
+  - line plot,
+  - bar plot,
+  - scatter plot,
+  - image plot.
+
+To demonstrate how we can utilize these objects, refer to the following example:
+
+```python
+import multiprocessing as mp
+import time
+
+import numpy as np
+from scipy import fft
+
+from plotter import Plotter, PlotterManager
+
+
+def get_spectrum(fs, x, n_fft=None, log=False):
+    n = x.size
+    if n_fft is None:
+        n_fft = int(2 ** np.ceil(np.log2(n)))
+    x_spec = fft.fft(x, n_fft)
+    x_spec = np.abs(x_spec)
+    x_spec = x_spec / n
+    n_keep = n_fft // 2 + 1
+    x_spec = x_spec[0:n_keep]
+    x_spec[1:-1] = 2 * x_spec[1:-1]
+    f = np.linspace(0, fs / 2, n_keep)
+    if log:
+        eps = 1e-10
+        x_spec[x_spec < eps] = eps
+        x_spec = 20 * np.log10(x_spec)
+
+    return f, x_spec
+
+
+def generate_sine_signal(
+    num_samples, amplitude, frequency, sample_rate, offset=0, phase=0
+):
+    if sample_rate <= 0:
+        raise ValueError("Sample rate can't be negative or zero")
+    if frequency <= 0:
+        raise ValueError("Frequency can't be negative or zero")
+    if frequency > sample_rate / 2:
+        raise ValueError("Frequency is greater than sample_rate/2")
+    time = np.arange(num_samples) / sample_rate
+    signal = amplitude * np.sin(2 * np.pi * frequency * time + phase) + offset
+    return signal
+
+
+def generate_sinesweep(f_start, f_stop, amplitude, t_duration, fs):
+    phi = 0
+    f = f_start
+    delta = 2 * np.pi * f / fs
+    f_delta = (f_stop - f_start) / (fs * t_duration)
+    samples = []
+    for _ in range(int(fs * t_duration)):
+        sample = amplitude * np.sin(phi)
+        phi += delta
+        f += f_delta
+        delta = 2 * np.pi * f / fs
+        samples.append(sample)
+    return samples
+
+
+def main():
+    fs = 50
+    num_samples = 50
+    sin_wave = generate_sine_signal(num_samples, 1, 5, fs)
+    cos_wave = generate_sine_signal(num_samples, 1, 2, fs, 0, np.pi / 2)
+    sinesweep_wave = generate_sinesweep(0.1, 10, 1, 5, num_samples)
+    i_sin = 0
+    i_cos = 0
+    i_sinswp = 0
+    n_fft = 64
+    n_spec_update = 1
+    spec_buf = np.zeros(n_fft)
+    spectrogram = np.full(
+        (n_fft // 2 + 1, num_samples // n_spec_update), np.nan
+    )
+    i_spec_buf = 0
+    i_spectrogram = 0
+    plotter_manager = PlotterManager(Plotter())
+    plotter_manager.create_figure("fig_demo", 3, 6, figsize=(12, 7))
+    plotter_manager.create_axis("ax_line1", "fig_demo", 0, 0, 1, 2)
+    plotter_manager.create_axis("ax_line2", "fig_demo", 1, 0, 1, 2)
+    plotter_manager.create_axis("ax_bar", "fig_demo", 2, 0, 1, 2)
+    plotter_manager.create_axis("ax_scat", "fig_demo", 0, 2, 2, 2)
+    plotter_manager.create_axis("ax_line3", "fig_demo", 2, 2, 1, 2)
+    plotter_manager.create_axis("ax_line4", "fig_demo", 2, 4, 1, 2)
+    plotter_manager.create_axis("ax_img", "fig_demo", 0, 4, 2, 2)
+
+    plotter_manager.create_line_plot("line1", "ax_line1", num_samples)
+    plotter_manager.create_line_plot("line2", "ax_line2", num_samples)
+    plotter_manager.create_bar_plot("bar", "ax_bar", 2)
+    plotter_manager.create_line_plot(
+        "line3_1", "ax_line3", num_samples, label="sin"
+    )
+    plotter_manager.create_line_plot(
+        "line3_2", "ax_line3", num_samples, label="cos"
+    )
+    plotter_manager.create_scatter_plot("scat", "ax_scat", num_samples // 5)
+    plotter_manager.create_line_plot("line4", "ax_line4", num_samples)
+    plotter_manager.create_image_plot(
+        "img",
+        "ax_img",
+        (n_fft // 2 + 1, num_samples // n_spec_update),
+        cbar=True,
+        vmin=0,
+        vmax=1,
+        aspect="auto",
+        origin="lower",
+    )
+
+    plotter_manager.modify_axis(
+        "ax_line1",
+        [0, num_samples - 1],
+        [-1.1, 1.1],
+        ylabel="Sine",
+        yticks=[-1, 0, 1],
+    )
+    plotter_manager.modify_axis(
+        "ax_line2",
+        [0, num_samples - 1],
+        [-1.1, 1.1],
+        ylabel="Cosine",
+        yticks=[-1, 0, 1],
+    )
+    plotter_manager.modify_axis(
+        "ax_bar",
+        [-0.5, 1.5],
+        [-1.1, 1.1],
+        ylabel="Amplitudes",
+        xticks=[0, 1],
+        xticklabels=["Sine", "Cosine"],
+    )
+    plotter_manager.modify_axis(
+        "ax_scat",
+        [-1.1, 1.1],
+        [-1.1, 1.1],
+        xticks=[-1, 0, 1],
+        yticks=[-1, 0, 1],
+    )
+    plotter_manager.modify_axis(
+        "ax_line3",
+        [0, num_samples - 1],
+        [-1.1, 1.1],
+        xlabel="SinCos",
+        yticks=[-1, 0, 1],
+        legend=True,
+    )
+    plotter_manager.modify_axis(
+        "ax_line4",
+        [0, num_samples - 1],
+        [-1.1, 1.1],
+        xlabel="Chirp",
+        yticks=[-1, 0, 1],
+    )
+    plotter_manager.modify_axis("ax_img", [0, num_samples - 1], [0, 25])
+
+    plotter_manager.show()
+    while plotter_manager.is_shown():
+        data = {
+            "line1": sin_wave[i_sin],
+            "line2": cos_wave[i_cos],
+            "bar": [sin_wave[i_sin], cos_wave[i_cos]],
+            "line3_1": sin_wave[i_sin],
+            "line3_2": cos_wave[i_cos],
+            "scat": [sin_wave[i_sin], cos_wave[i_cos]],
+            "line4": sinesweep_wave[i_sinswp],
+        }
+        spec_buf[i_spec_buf] = sinesweep_wave[i_sinswp]
+        if i_spec_buf % n_spec_update == 0:
+            _, spec = get_spectrum(fs, spec_buf, n_fft)
+            if i_spectrogram == spectrogram.shape[1] - 1:
+                spectrogram[:, : spectrogram.shape[1] - 1] = spectrogram[:, 1:]
+                spectrogram[:, i_spectrogram] = spec
+            else:
+                spectrogram[:, i_spectrogram] = spec
+                i_spectrogram += 1
+            data["img"] = spectrogram.copy()
+        plotter_manager.add_data(data)
+        i_sin += 1
+        i_cos += 1
+        i_sinswp += 1
+        i_spec_buf += 1
+        if i_sin >= len(sin_wave):
+            i_sin = 0
+        if i_cos >= len(cos_wave):
+            i_cos = 0
+        if i_sinswp >= len(sinesweep_wave):
+            i_sinswp = 0
+        if i_spec_buf >= num_samples:
+            i_spec_buf -= n_spec_update
+            spec_buf[: len(spec_buf) - n_spec_update] = spec_buf[
+                n_spec_update:
+            ]
+        time.sleep(1 / 50)
+    plotter_manager.stop()
+
+
+if __name__ == "__main__":
+    mp.freeze_support()
+    main()
+```
+{: file='plotter_example.py'}
+
+This example code generates the following plots:
+
+![Plotter example](/assets/img/pyrtkit/plotter-example.gif)
+_Plotter example_
+
+## PyDevDTK (Python Device Development ToolKit)
+
+[PyDevDTK](https://github.com/BojanSof/PyDevDTK) is Python project that aims to derive the features covered in this blog post.
+It is still in the early stages at the time of writing this blog post, but over time new functionalities and improvements will be added, to make the project better for the user.
+
+The Python package is available on PyPI, and the documentation is hosted [here](https://bojansof.github.io/PyDevDTK/main/index.html).
