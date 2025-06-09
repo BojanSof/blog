@@ -5,7 +5,7 @@ categories: [Electronics, Embedded Systems, Software]
 tags: [electronics, embedded, software, python]
 math: true
 image:
-  path: /assets/img/pyrtkit/cover.webp
+  path: /assets/img/pydevdtk/cover.webp
 ---
 
 Embedded systems play a crucial role in powering modern devices, integrating hardware and software to perform a wide range of tasks.
@@ -631,8 +631,8 @@ plt.show()
 This example produces the plot shown on the image below.
 The basic concepts of matplotlib are also shown on the same image.
 
-![Basic concepts in `matplotlib`](/assets/img/pyrtkit/matplotlib-concepts.svg){: .light}
-![Basic concepts in `matplotlib`](/assets/img/pyrtkit/matplotlib-concepts-dark.svg){: .dark}
+![Basic concepts in `matplotlib`](/assets/img/pydevdtk/matplotlib-concepts.svg){: .light}
+![Basic concepts in `matplotlib`](/assets/img/pydevdtk/matplotlib-concepts-dark.svg){: .dark}
 _Basic concepts in `matplotlib`_
 
 ### Real-time plotting using `matplotlib`
@@ -723,8 +723,8 @@ print(f"Mean FPS: {np.mean(fps)}")
 
 This example creates a figure with 3 subplots, as shown on the image below.
 
-![Real-time plotting example 1](/assets/img/pyrtkit/animation-example-1.svg){: .light}
-![Real-time plotting example 1](/assets/img/pyrtkit/animation-example-1-dark.svg){: .dark}
+![Real-time plotting example 1](/assets/img/pydevdtk/animation-example-1.svg){: .light}
+![Real-time plotting example 1](/assets/img/pydevdtk/animation-example-1-dark.svg){: .dark}
 _Real-time plotting example 1_
 
 The `FuncAnimation` calls the function `visualize`, which plots a maximum of `num_points` points on the subplots.
@@ -826,8 +826,8 @@ print(f"Mean FPS: {np.mean(fps)}")
 The figure window is shown on the image below.
 This example, on my machine achieves mean FPS of `48.25`.
 
-![Real-time plotting example 2](/assets/img/pyrtkit/animation-example-2.svg){: .light}
-![Real-time plotting example 2](/assets/img/pyrtkit/animation-example-2-dark.svg){: .dark}
+![Real-time plotting example 2](/assets/img/pydevdtk/animation-example-2.svg){: .light}
+![Real-time plotting example 2](/assets/img/pydevdtk/animation-example-2-dark.svg){: .dark}
 _Real-time plotting example 2_
 
 So we increased the FPS by a factor of nearly 10.
@@ -1819,7 +1819,7 @@ if __name__ == "__main__":
 
 This example code generates the following plots:
 
-![Plotter example](/assets/img/pyrtkit/plotter-example.gif)
+![Plotter example](/assets/img/pydevdtk/plotter-example.gif)
 _Plotter example_
 
 ## PyDevDTK (Python Device Development ToolKit)
