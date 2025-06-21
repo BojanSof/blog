@@ -20,10 +20,13 @@ The cheap smart watches are basically an embedded system, that contain SoC which
 
 Typically, such SoCs are manufactured by Chinese companies.
 One such chip is JL7012, manufactured by [JieLi Technology](https://www.zh-jieli.com/).
-More info for one variant of this chip, JL7012F, can be found [yufanchip webpage](https://www.yufanchip.com/audio-bluetooth-chip-jl7012f.html), which seem like a component distributor company.
+More info for one variant of this chip, JL7012F, can be found [yufanchip webpage](https://www.yufanchip.com/audio-bluetooth-chip-jl7012f.html), which seems like a component distributor company.
 The image below shows the block diagram of JL7012F chip, extracted from the datasheet found on yfanchip.
 
 ![JL7012F Block Diagram](/assets/img/smawf/jl7012f-block-diagram.png)
+
+> This blog post is purely for educational purposes, without intention to violate the terms of service of the smart watch. It would be great if the manufacturers provide watch face editing tools for such watch faces so the users can customize their devices to their likings.
+{: .prompt-warning }
 
 ## Brief story for the motive
 
