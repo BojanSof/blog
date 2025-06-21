@@ -48,19 +48,76 @@ The first and most reasonable thing to do is to check the Internet if someone al
 Initial searches using the watch model were not providing results, so I started doing more generic searches, which included the keywords `cheap`, `chinese`, `smartwatch`, `watchface`, `format`.
 I've started finding multiple posts on forums like [XDA Forums](https://xdaforums.com/) and [4PDA Forums](https://4pda.to/forum/index.php?act=idx), which provided some insights and tools (spreadsheets and applications typically without source code) for the watch face formats used in different cheap smart watches.
 
-Most notably, the following threads from the User... helped me a lot, and I got in contact with him and he was very helpful an providing me insights even during the holidays period, when I wanted to get this project done.
+Initially, I found one thread on XDA called [HK89, HK26 smartwatch and maybe other watches made with JL7012 cpu](https://xdaforums.com/t/hk89-hk26-smartwatch-and-maybe-other-watches-made-with-jl7012-cpu.4616517/), which was very promising as the author already created two tools, one decomposer tool, which extracts the image resources and writes the necessary metadata from a given watch face file, and composer tool, that goes the other way around - creates watch face file from resources.
+And the watch faces specified in that thread were using same chip as the one in my smart watch.
+I've tried both tools and the decomposer worked somewhat for the 10011 watch face, but it wasn't functioning completely - there were few missing image resources.
+It wasn't working well for other watch faces, the reason being there were specific block types that weren't implemented in the tool.
+I couldn't get the composer tool to work with the watch face files that I was using.
+Sadly, the tools were provided without source code, but produced outputs that helped during the reverse enginnering of the watch face format.
 
-Now, with bigger confidence, it was time to try and actually start decoding the watch face format.
+I carried on with the search through the forums and found few blog posts initiated by user called `vxsw`, who is creating a lot of tools for other smart watches and he is providing spreadsheets for the formats used in other smart watches.
+The forum thread [[TBUI] TBUI Watch face tool. Editor for one of the FitcloudPro watch face format.](https://xdaforums.com/t/tbui-tbui-watch-face-tool-editor-for-one-of-the-fitcloudpro-watch-face-format.4591917/) really got my eye, and I was getting more knowledge from such posts about the formats of the watch faces used in such smart watches.
+
+I've started to play around with the watch face format used in my smart watch a bit, but I got few things that were unclear to me and messaged `vxsw`, who was very helpful and provided me pointers and info that helped me during the process.
+Big thanks to him!
+
+So, with bigger confidence after the searching, I was ready to get my hands dirty.
 But before that, I needed a way to extract watch face from the application.
 
-## Step 1: Obtaining watch face file
+## Obtaining watch face file
 
 The first thing that I got to do was obtaining the actual watch face file.
-I discovered that the SmartTime PRO app stores watch face files in a cache directory on the Android device.
-These files are in a binary format and have a specific filename pattern.  
-*[Describe the filename pattern and location here]*
+I discovered that the SmartTime PRO app stores watch face files in a cache directory in application's data folder, which on Android is easy to access using `adb`.
+The directory where the downloaded watch faces are stored, on my Android device is:
+```
+/storage/self/primary/Android/data/com.sma.smartv3.pro/cache/dial
+```
+{: file='Watch faces cache directory'}
+For each watch face, there are two files:
+- the actual watch face file, with `.bin` extension, and
+- file with same name as the watch face file, but without extension.
 
-## Step 2: Decoding the Format with Python
+Opening the file without extension in text editor showed that this file contains the link of the watch face preview image.
+
+Interestingly, we can discover something about the naming conventions and we can download all the available watch faces for the smartwatch.
+Let's take for example the watch face that was motive for the project, whose filename is `AM08_T-fit 400 C_10011.bin`.
+The first part of the filename, `AM08_T-fit 400 C` is the model of the watch.
+The same application is used for multiple smart watches.
+The second part of the filename, `10011` is given based on the category of the watch face and the order of the watch face in the category list.
+In this case, the category is `10000`, which represents animated watch faces, while `11` is the order of the watch face in the list.
+
+Now let's take a look at the link in the file without extension:
+```
+https://api-oss.iot-solution.net/watchFace/JL/AM08/default/category/dynamic1/10011.gif
+```
+{: file='Watch face 10011 preview link'}
+
+If we open the link, we are going to see the animated preview for the watch face:
+
+![Watch Face 10011](/assets/img/smawf/10011.gif){: width="300" }
+
+If we change 10011 to 10015, we get another watch face:
+
+![Watch Face 10015](/assets/img/smawf/10015.gif){: width="300" }
+
+The actual watch face can easily be downloaded if we only change the extension in the links to `.bin`.
+
+Similarly, there are other categories besides the animated (aka `dynamic1` category), like sport ones (`exercies2`), business-looking watch faces (`business3`), analog watch faces (`machinery4`), and so on.
+They follow the same naming conventions - instead of 10000 base for animated watch faces, change the base to 40000 and we can check the preview (now `png` format, as other watch faces are not having animations like the radar one on 10011) and download analog watch faces:
+```
+https://api-oss.iot-solution.net/watchFace/JL/AM08/default/category/machinery4/40001.png
+https://api-oss.iot-solution.net/watchFace/JL/AM08/default/category/machinery4/40001.bin
+```
+{: file='Watch face 40001 preview and file links'}
+
+![Watch face 40001 preview](/assets/img/smawf/40001.png){: width="300" }
+
+> In the GitHub repository for the GUI that I made for this project, there is a [Python script](https://github.com/BojanSof/sma-wf-editor/blob/main/download_wfs_internet.py) that downloads all available watch faces for the smart watch.
+{: .prompt-info }
+
+We will work on the format decoding using the watch face that was motive for the project, 10011.
+
+## Decoding the Format with Python
 
 To make sense of the binary format, I turned to Python. Using the `struct` module and `dataclasses`, I was able to map the raw bytes into structured data. Here’s a simplified example of how I defined a block of the watch face data:
 
