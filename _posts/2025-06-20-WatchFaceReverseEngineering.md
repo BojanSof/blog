@@ -120,9 +120,118 @@ https://api-oss.iot-solution.net/watchFace/JL/AM08/default/category/machinery4/4
 
 We will work on the format decoding using the watch face that was motive for the project, 10011.
 
-## Decoding the Format with Python
+## Decoding the Format
 
-To make sense of the binary format, I turned to Python. Using the `struct` module and `dataclasses`, I was able to map the raw bytes into structured data. Here’s a simplified example of how I defined a block of the watch face data:
+To explore the format, I used hexeditor, to look at the specific bytes in the file, along with [ipython](https://ipython.org/), powerfull interactive shell, helping a lot with file operations and analyzing the content in code.
+Python enables to quickly express ideas to perform on the content of the file or specific parts of it.
+
+Initially, thanks to the forum threads described above, I had some good idea of what to expect in the watch face format.
+Basically, the watch face file contains two things:
+- Image resources, like background, digits, symbols, stored in some format, and
+- Block information, which describe the actual layout of the watchface, which assets are used, where they are placed and similar.
+
+The watch face file is interestingly engineered.
+At the beginning, the file contains list of blocks information and list of the size of each image asset.
+The lists can have different sizes in different watch faces, so every watch face starts with the size of the lists.
+
+The following hex-view is from the `10011.bin` watch face file, and provides the most basic file structure.
+
+<div class="hex-view" 
+     data-src="{{site.baseurl}}/assets/files/smawf/10011.bin"
+     data-width="16"
+     data-toppct="90"
+     data-maxlines="60"
+     data-highlights='[
+       {"start":0, "length":2, "color":"#dffc03", "label":"Images info list count"},
+       {"start":2, "length":1, "color":"#0d9900", "label":"Block count"},
+       {"start":3, "length":1, "color":"#6b6b6b", "label":"Unknown"},
+       {"start":4, "length":320, "color":"#006699", "label":"List of blocks info"},
+       {"start":324, "length":488, "color":"#99002e", "label":"List of images info"},
+       {"start":812, "length":709992, "color":"#168876", "label":"List of images data"}
+     ]'>
+</div>
+
+### Data Header
+
+I called the first 4 bytes of the watch face file as Header.
+The first two bytes represent the number of image assets in the watch face and the third byte is the number of blocks consisting the layout of the watch face.
+I couldn't understand what the fourth byte means, and it wasn't important as long as I could tell.
+Maybe it represents some kind of version.
+It was having the value `0x02` for every watch face that I inspected.
+For the `10011.bin` watch face, we can see that it has 122 (`0x007a`) image assets, and the number of blocks is 16 (`0x10`).
+
+### Block info
+
+Now let's take a closer look at the block info structure, by inspecting single instance of this structure.
+
+<div class="hex-view" 
+     data-src="{{site.baseurl}}/assets/files/smawf/10011.bin"
+     data-start="4"
+     data-end="24"
+     data-width="4"
+     data-toppct="90"
+     data-maxlines="60"
+     data-highlights='[
+       {"start":4, "length":4, "color":"#1870c6", "label":"Image offset"},
+       {"start":8, "length":2, "color":"#1c7aad", "label":"Image ID"},
+       {"start":10, "length":2, "color":"#1cabbd", "label":"Width"},
+       {"start":12, "length":2, "color":"#8b15e8", "label":"Height"},
+       {"start":14, "length":2, "color":"#a6008a", "label":"X-axis position"},
+       {"start":16, "length":2, "color":"#c13182", "label":"Y-axis position"},
+       {"start":17, "length":1, "color":"#e46180", "label":"Number of images"},
+       {"start":18, "length":1, "color":"#ff8f77", "label":"RGBA format"},
+       {"start":19, "length":1, "color":"#82399a", "label":"Type"},
+       {"start":20, "length":1, "color":"#bf72c7", "label":"Horizontal Alignment"},
+       {"start":21, "length":1, "color":"#01ecaa", "label":"Compression type"},
+       {"start":22, "length":1, "color":"#e3e23a", "label":"X-axis rotation center*"},
+       {"start":23, "length":1, "color":"#feae5e", "label":"Y-axis rotation center*"}
+     ]'>
+</div>
+
+The next image shows what these fields mean.
+
+![Block layout](/assets/img/smawf/block-info.svg)
+
+### Image size info
+
+The image size info table is quite simple and contains list of 4-bytes values, each representing the size of a specific image resource in the watch face file.
+It is good to note here that image data size is always divisble by 4, most probably because of the SoC expects the data to be aligned on word (32-bit) boundary in the Flash storage.
+This will require some padding in the image data, but we will look at that later.
+
+### Image data
+
+After the "metadata", the watch face file contains the actual image resources data.
+The pixel format used for storing the image data is RGB565 (requiring 2 bytes) or Alpha + RGB565 (requiring 1 + 2 = 3 bytes), depending on the `RGBA` info stored in the block info.
+
+I've found two methods how image data is stored:
+- uncompressed method, denoted by the value of `0x00` of the `compr` field in the block info structure, and
+- line-based compression method, denoted by the value of `0x04` of the `compr` filed in the block info structure.
+
+#### Uncompressed method
+
+The uncompressed method, often used for storing image assets as the analog hands, stores all of the RGB565 or Alpha + RGB565 pixel values, without taking into consideration if there are repeating pixel values one after another.
+Pixels are stored in line order - going from top to bottom.
+Each line is padded with zeros to ensure its size is multiple of 4.
+
+<!-- EXAMPLE UNCOMPRESSED IMAGE WITH HEX VIEW HERE -->
+
+#### Compression method
+
+The `0x04` compression method utilizes line-based [run-length encoding](https://en.wikipedia.org/wiki/Run-length_encoding) to compress image data.
+What this basically means is that in each line, repeating pixel values are replaced with the number of pixels that are part of the chain, and the pixel value.
+
+## Using Python to parse C-style structure data
+
+We can perform the parsing of the C-style structured data easily in Python, utilizing the [`struct`](https://docs.python.org/3/library/struct.html) module and [`dataclasses`](https://docs.python.org/3/library/dataclasses.html) module.
+
+The `dataclasses` module allows us to easily specify the fields of a class, opposed to the way of defining the fields in the `__init__` method.
+On the other side, the `struct` module allows to easily describe data layout using format string.
+The `struct` module is missing bit-fields handling, which often appears in C code, especially one targeting embedded systems, so we need to handle that manually.
+
+> There is a Python package called [`bitstruct`](https://bitstruct.readthedocs.io/) that works on bit level opposed to the `struct` module in Python, which works on byte level. This package was not used in this project.
+{: .prompt-tip }
+
+Let's take the `BlockInfo` structure as an example and see how we can easily represent it in Python.
 
 ```python
 @dataclass
@@ -195,20 +304,258 @@ class BlockInfo:
             cent_y,
         )
 ```
+{: file='block_info.py'}
 
-This approach allowed me to read and write the binary data in a structured way, making it much easier to experiment and understand the format.
+Using `dataclasses` module, we define each field of the block info structure.
+We utilize the [`struct.Struct`](https://docs.python.org/3/library/struct.html#struct.Struct) class, creating `_struct` object, to provide the byte-level description of the block info structure, specifying the size of each field in number of bytes and the byte order.
+We can now easily pack structured data in byte string by simply calling the [`_struct.pack`](https://docs.python.org/3/library/struct.html#struct.Struct.pack).
+Similarly, if we have the byte string, we can simply call the [`_struct.unpack`](https://docs.python.org/3/library/struct.html#struct.Struct.unpack) function to extract the structured data.
 
-## Step 3: Discovering the Format
+For convenience, we can implement the `__bytes__` function, to be able to simply convert structured data to byte string, by calling the `bytes()` function on the `BlockInfo` object.
+This function uses the `_struct.pack` function to provide the byte string for the object.
 
-Through trial and error, and by comparing different watch face files, I gradually pieced together the structure of the format. Each block in the file describes an image or element on the watch face, including its position, size, and other properties. Some fields were straightforward, while others required more investigation and testing.
+A lot of Python modules, like `json`, `yaml` and many others related to serialization, that provide `load()` function, for loading specific serialization file types in memory, provide `loads()` method, which allows to give string object (`str`, `bytes` or `bytearray`) as input.
+Following this approach, we can implement static method, `loads()`, which allows to create object from input bytes.
+This function utilizes the `_struct.unpack` function under the hood.
 
-*[Describe your process of reverse engineering: what tools you used, how you compared files, any “aha!” moments, and how you validated your findings.]*
+```terminal
+> block_info_bytes = b"\x2c\x03\x00\x00\x00\x00\x04\x01\x3e\x01\x00\x00\x00\x00\x01\x01\x09\x04\x00\x00"
+> block_info = BlockInfo.loads(block_info_bytes)
+> block_info
+BlockInfo(img_offset=812, img_id=0, width=260, height=318, pos_x=0, pos_y=0, num_imgs=1, is_rgba=False, blocktype=<BlockType.Preview: 1>, align=<BlockHorizontalAlignment.Left: 9>, compr=4, cent_x=0, cent_y=0)
+> bytes(block_info) == block_info_bytes
+True
+```
+{: file="Block Info Example"}
 
-## Step 4: Building Tools for the Community
+All functions for parsing, editing and creating watch face files are implemented in the [`smawf.py`](https://github.com/BojanSof/sma-wf-editor/blob/main/smawf.py) script.
 
-Once I understood the format, I created a Python script for decoding and encoding watch face files, as well as a GUI tool for creating and editing custom watch faces. These tools are open source and available on my GitHub repository:  
-[https://github.com/BojanSof/sma-wf-editor](https://github.com/BojanSof/sma-wf-editor)
+```terminal
+> from smawf import WatchFace
+> wf_bytes = open("10011.bin", "rb").read()
+> wf = WatchFace.loads(wf_bytes)
+> wf.meta_data.blocks_info[0]
+BlockInfo(img_offset=812, img_id=0, width=260, height=318, pos_x=0, pos_y=0, num_imgs=1, is_rgba=False, blocktype=<BlockType.Preview: 1>, align=<BlockHorizontalAlignment.Left: 9>, compr=4, cent_x=0, cent_y=0)
+> wf.imgs_data[0].unpack()
+<PIL.Image.Image image mode=RGB size=260x318>
+> wf.imgs_data[0].unpack().show()  # opens image preview
+```
+{: file="smawf.py usage"}
+
+## Watch Face Editor GUI
+
+As final thing for this project, I've created graphical interface that allows to create and edit watch faces for the smart watch.
+
+![SMA smart watch face creator](/assets/img/smawf/sma-wf-gui.png)
+
+The GUI provides block info editor on the left side, with graphical preview and editor on the right side, which allows to move, scale and rotate the blocks.
+It allows to easily load and save watch face files.
+There are also tools to create preview of the watch face by utilizing the `Tools -> Create Preview` functionality, or save all image assets in a given folder, by using `Tools -> Save all images`.
 
 ## Conclusion
 
-Reverse engineering the watch face format was a fun and rewarding project. Not only did I get my blue-themed watch face, but I also learned a lot about binary formats, Python struct handling, and the smartwatch ecosystem. I hope my tools and findings help others customize their own devices!
+![Goal achieved](/assets/img/smawf/sma-wf-end-result.jpeg)
+_The goal was achieved!_
+
+Overall, this project was quite fun and allowed me to explore the clever engineering of the watch face format in a cheap smart watch.
+Some of these devices have very good screens, long battery life, but it would be cool if they provided more customization support, like the Android smart watches.
+
+Sadly, although this watch had very good screen and I really loved it, after one month, the battery stopped charging and was deemed as irreparable by the service company of the place where it was bought.
+But it sure did provide me good fun during the month it was working!
+
+<!-- Need to change this in future, for better re-use -->
+<!-- For hexview, copied from /assets/styles/hexview.css -->
+<style>
+.hex-view {
+  font-family: monospace;
+  background: var(--hex-bg);
+  color: var(--hex-fg);
+  padding: 1em;
+  overflow-x: auto;
+  border: 1px solid var(--hex-border);
+  margin-bottom: 1em;
+  position: relative;
+}
+
+.hex-filename {
+  position: absolute;
+  top: 0.5em;
+  left: 1em;
+  font-weight: bold;
+  font-family: monospace;
+  font-size: 0.95em;
+  color: var(--hex-fg);
+}
+
+.hex-line {
+  white-space: nowrap;
+}
+
+.byte-span {
+  display: inline-block;
+  padding: 0.1em 0.4em;
+  margin-right: 0.1em;
+  border-radius: 4px;
+  position: relative;
+  pointer-events: auto;
+}
+
+.highlighted {
+  background-color: #b3e5fc;
+}
+
+.tooltip {
+  position: absolute;
+  background: var(--tooltip-bg);
+  color: var(--tooltip-fg);
+  padding: 0.3em 0.5em;
+  border-radius: 4px;
+  font-size: 0.8em;
+  white-space: nowrap;
+  z-index: 9999;
+  display: none;
+  pointer-events: none;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em;
+  margin-top: 0.5em;
+  font-size: 0.85em;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  display: inline-block;
+  border: 1px solid #333;
+}
+
+html[data-theme='light'] .hex-view {
+  --hex-bg: #f5f5f5;
+  --hex-fg: #212121;
+  --hex-border: #ccc;
+  --tooltip-bg: #333;
+  --tooltip-fg: #fff;
+}
+
+html[data-theme='dark'] .hex-view {
+  --hex-bg: #1e1e1e;
+  --hex-fg: #e0e0e0;
+  --hex-border: #444;
+  --tooltip-bg: #eee;
+  --tooltip-fg: #111;
+}
+</style>
+
+<!-- Need to change this in future, for better re-use -->
+<!-- For hexview, copied from /assets/js/hexview.js -->
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+  const views = document.querySelectorAll('.hex-view');
+  for (const view of views) {
+    const width = parseInt(view.dataset.width || '16');
+    const maxLines = parseInt(view.dataset.maxlines || '50');
+    const highlights = JSON.parse(view.dataset.highlights || '[]');
+    const src = view.dataset.src;
+
+    const response = await fetch(src);
+    const buffer = await response.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+
+    if (view.dataset.filename) {
+      const filenameElem = document.createElement('div');
+      filenameElem.className = 'hex-filename';
+      filenameElem.textContent = view.dataset.filename;
+      view.appendChild(filenameElem);
+    }
+
+    const legendMap = {};
+    highlights.forEach(h => {
+      if (h.label && !legendMap[h.label]) {
+        legendMap[h.label] = h.color || '#b3e5fc';
+      }
+    });
+    const legend = document.createElement('div');
+    legend.className = 'legend';
+    legend.style.position = 'relative';
+    legend.style.display = 'flex'; // horizontal layout
+    legend.style.flexDirection = 'row';
+    legend.style.flexWrap = 'wrap';
+    legend.style.alignItems = 'center';
+    legend.style.marginBottom = '0.5em';
+    legend.style.left = '0';
+    legend.style.top = '0';
+    legend.style.padding = '0.2em 0.7em';
+    legend.style.borderRadius = '6px';
+    legend.style.zIndex = '10';
+    for (const label in legendMap) {
+      const item = document.createElement('div');
+      item.className = 'legend-item';
+      item.style.display = 'flex';
+      item.style.alignItems = 'center';
+      item.style.marginRight = '1.2em';
+      item.innerHTML = `<span class=\"legend-color\" style=\"background:${legendMap[label]}\"></span> ${label}`;
+      legend.appendChild(item);
+    }
+    view.insertBefore(legend, view.firstChild);
+
+    const container = document.createElement('div');
+    // Support data-start and data-end for bounds
+    const start = parseInt(view.dataset.start || '0');
+    const end = view.dataset.end ? parseInt(view.dataset.end) : bytes.length;
+    const boundedBytes = bytes.slice(start, end);
+    const boundedLength = boundedBytes.length;
+    const lineCount = Math.ceil(boundedLength / width);
+    const truncate = lineCount > maxLines;
+    // Allow specifying top/bottom split percentage via data-toppct (default 50)
+    const topPct = parseInt(view.dataset.toppct || '50');
+    const bottomPct = 100 - topPct;
+    const topLines = truncate ? Math.floor(maxLines * topPct / 100) : lineCount;
+    const bottomStart = truncate ? lineCount - Math.floor(maxLines * bottomPct / 100) : lineCount;
+
+    for (let i = 0; i < lineCount; ++i) {
+      if (truncate && i === topLines) {
+        const skipped = document.createElement('div');
+        skipped.className = 'hex-line';
+        skipped.textContent = '... skipped ...';
+        container.appendChild(skipped);
+        i = bottomStart - 1;
+        continue;
+      }
+
+      const offset = i * width;
+      const row = boundedBytes.slice(offset, offset + width);
+      const lineElem = document.createElement('div');
+      lineElem.className = 'hex-line';
+      let html = '';
+
+      // Add address column (relative to file, not just bounded region)
+      html += `<span class="hex-address" style="display:inline-block; min-width: 4.5em; color: #888; margin-right: 1em;">${(start + offset).toString(16).padStart(8, '0')}</span>`;
+
+      for (let j = 0; j < row.length; j++) {
+        const idx = start + offset + j;
+        const byteStr = row[j].toString(16).padStart(2, '0');
+        const h = highlights.find(h => idx >= h.start && idx < h.start + h.length);
+        const color = h?.color || 'var(--highlight-bg, #b3e5fc)';
+        const label = h?.label || '';
+
+        html += `<span class="byte-span ${h ? 'highlighted' : ''}" style="${h ? `background-color:${color}` : ''}" data-label="${label}">${byteStr}</span>`;
+      }
+
+      lineElem.innerHTML = html;
+      container.appendChild(lineElem);
+    }
+
+    view.appendChild(container);
+  }
+});
+</script>
