@@ -188,9 +188,12 @@ Now let's take a closer look at the block info structure, by inspecting single i
      ]'>
 </div>
 
-The next image shows what these fields mean.
+To explain these fields, we will refer to few illustrations.
+Some of the block fields are used only for specific block types.
 
-![Block layout](/assets/img/smawf/block-info.svg)
+![Block fields](/assets/img/smawf/block-info-light.svg){: .light}
+![Block fields](/assets/img/smawf/block-info-dark.svg){: .dark}
+_Basic block fields description_
 
 ### Image size info
 
@@ -361,7 +364,7 @@ Overall, this project was quite fun and allowed me to explore the clever enginee
 Some of these devices have very good screens, long battery life, but it would be cool if they provided more customization support, like the Android smart watches.
 
 Sadly, although this watch had very good screen and I really loved it, after one month, the battery stopped charging and was deemed as irreparable by the service company of the place where it was bought.
-But it sure did provide me good fun during the month it was working!
+But it sure did provide me good fun during the Holiday season while it was working!
 
 <!-- Need to change this in future, for better re-use -->
 <!-- For hexview, copied from /assets/styles/hexview.css -->
