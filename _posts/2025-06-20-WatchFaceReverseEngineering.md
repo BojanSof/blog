@@ -195,6 +195,59 @@ Some of the block fields are used only for specific block types.
 ![Block fields](/assets/img/smawf/block-info-dark.svg){: .dark}
 _Basic block fields description_
 
+Each block has type, described with the `blocktype` field, describing the functionality of the block.
+There are quite few block types, including:
+- Background,
+- Animated decorations,
+- Digital clock related ones (hours, minutes, seconds, AM/PM),
+- Analog clock related ones (hours, minutes, seconds),
+- Date related (year, month, date),
+- Weather related,
+- Data related (steps, heart-rate, distance, calories).
+
+> The whole list of block types that I've discovered when I worked on the project are available on the [GitHub repository](https://github.com/BojanSof/sma-wf-editor/blob/40e55b183ecead0c1eb78b5ff288087c8262ee86/smawf.py#L19) for the project.
+{: .prompt-info }
+
+#### Assets-related fields
+
+We will now explain the fields related to the image asset.
+
+The `img_offset` field specifies the offset in the watch face file where the image assets can be found, for that specific block.
+`imd_id` field is closely related and specifies the index for the [image info table](#image-size-info).
+For a specific block, it is possible to have option to select one of total `num_imgs` assets.
+For example, in case of digital clock, we can select up to 10 digits for the hours block.
+
+The `is_rgba` field describes if the image asset is transparent (has alpha channel).
+Actually, this field is combined with the `blocktype` field - `is_rgba` is the MSB.
+
+We also have the `compr` field, which represents the compression method used to store the image asset.
+We will cover the compression methods in the [image data](#image-data) section.
+
+#### Layout-related fields
+
+Now, let's take a look at the fields related to the layout of the watch face.
+
+The origin of the coordinate system is at the top left corner, with the x-axis going towards right, y-axis going towards down, which is typical in computer graphics.
+We have the `pos_x` and `pos_y` fields, which control the position of the block, more specifically the position of its top-left corner.
+The `width` and `height` control the the size of the block.
+
+The field called `align` describes the horizontal alignment of block that has multiple digits, like the digital time blocks and the data blocks - steps, calories, heart-rate.
+It is possible to have left, center and right horizontal alignment.
+The alignment is relative to the block position.
+In left alignment, the digits start at same position as the block one, while in right alignment the digits end at same position as the block one.
+In center alignment, the center of the digits is at the same position as the block one.
+
+```
+    |         block position
+12345         right alignment
+  12345       center alignment
+    12345     left alignment
+```
+{: file='Horizontal alignment illustration'}
+
+Finally, the two fields, `cent_x` and `cent_y` are related to specific block types that need to support rotation, like the analog time hands.
+By trial and error, the rotation center has coordinates `(width - cent_x, height - cent_y)`, local to the block coordinate system.
+
 ### Image size info
 
 The image size info table is quite simple and contains list of 4-bytes values, each representing the size of a specific image resource in the watch face file.
@@ -222,6 +275,13 @@ Each line is padded with zeros to ensure its size is multiple of 4.
 
 The `0x04` compression method utilizes line-based [run-length encoding](https://en.wikipedia.org/wiki/Run-length_encoding) to compress image data.
 What this basically means is that in each line, repeating pixel values are replaced with the number of pixels that are part of the chain, and the pixel value.
+
+The prefix used for the compression is actually consisting of 7-bit length field, denoted as `n`, and the MSB is a bit which we can refer to as `same_val`.
+If `same_val` is zero, then after the prefix byte, we have the color values for `n` pixels.
+If `same_val` is one, then after the prefix byte, we need to repeat the same color values for the next `n` pixels.
+The color value for the pixel can be 2-bytes long for RGB or 3-bytes long for RGBA.
+
+<!-- EXAMPLE COMPRESSED IMAGE WITH HEX VIEW HERE -->
 
 ## Using Python to parse C-style structure data
 
