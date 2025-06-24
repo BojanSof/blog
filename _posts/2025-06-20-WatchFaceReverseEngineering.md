@@ -269,8 +269,6 @@ The uncompressed method, often used for storing image assets as the analog hands
 Pixels are stored in line order - going from top to bottom.
 Each line is padded with zeros to ensure its size is multiple of 4.
 
-<!-- EXAMPLE UNCOMPRESSED IMAGE WITH HEX VIEW HERE -->
-
 #### Compression method
 
 The `0x04` compression method utilizes line-based [run-length encoding](https://en.wikipedia.org/wiki/Run-length_encoding) to compress image data.
@@ -281,7 +279,540 @@ If `same_val` is zero, then after the prefix byte, we have the color values for 
 If `same_val` is one, then after the prefix byte, we need to repeat the same color values for the next `n` pixels.
 The color value for the pixel can be 2-bytes long for RGB or 3-bytes long for RGBA.
 
-<!-- EXAMPLE COMPRESSED IMAGE WITH HEX VIEW HERE -->
+Below you can interactively explore how the smartwatch image compression works. Load your own image or use the sample, zoom and pan, and inspect the RLE segments visually:
+
+<div id="compression-visualizer-blog">
+  <style>
+    :root {
+      --cv-bg: #fff;
+      --cv-fg: #222;
+    }
+    .cv-container {
+      max-width: 900px;
+      margin: 2em auto;
+      padding: 2em;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px #0001;
+      background: var(--cv-bg) !important;
+      color: var(--cv-fg) !important;
+      transition: background 0.2s, color 0.2s;
+      position: relative;
+    }
+    html[data-theme='light'] .cv-container {
+      --cv-bg: #f5f5f5;
+      --cv-fg: #212121;
+    }
+    html[data-theme='dark'] .cv-container {
+      --cv-bg: #1e1e1e;
+      --cv-fg: #e0e0e0;
+    }
+    body .cv-container {
+      position: relative;
+    }
+    .cv-controls {
+      margin-bottom: 1em;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.7em 1em;
+    }
+    .cv-controls .button-group {
+      display: flex;
+      gap: 0.5em;
+      align-items: center;
+    }
+    .cv-controls .file-input-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+    .cv-controls input[type="file"] {
+      opacity: 0;
+      width: 0.1px;
+      height: 0.1px;
+      position: absolute;
+      z-index: -1;
+    }
+    .cv-controls .file-label {
+      background: linear-gradient(90deg, #1976d2 0%, #42a5f5 100%);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 0.5em 1.2em;
+      font-size: 1em;
+      font-weight: 500;
+      box-shadow: 0 2px 6px #1976d220;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+      margin-right: 0.5em;
+      display: inline-block;
+    }
+    .cv-controls .file-label:hover, .cv-controls .file-label:focus {
+      background: linear-gradient(90deg, #1565c0 0%, #1976d2 100%);
+      box-shadow: 0 4px 12px #1976d240;
+      transform: translateY(-2px) scale(1.04);
+    }
+    .cv-controls input[type="number"] {
+      border: 1.5px solid #1976d2;
+      border-radius: 6px;
+      padding: 0.4em 0.7em;
+      font-size: 1em;
+      width: 4em;
+      outline: none;
+      transition: border 0.2s, box-shadow 0.2s;
+      box-shadow: 0 1px 3px #1976d210;
+      background: var(--cv-bg);
+      color: #1976d2;
+      font-weight: 600;
+    }
+    .cv-controls input[type="number"]:focus {
+      border: 2px solid #1565c0;
+      box-shadow: 0 2px 8px #1976d220;
+    }
+    .cv-controls label {
+      font-size: 1em;
+      margin-right: 0.3em;
+      color: #1976d2;
+      font-weight: 500;
+    }
+    .cv-canvas-wrap { position: relative; border: 1px solid #ccc; background: var(--cv-bg); display: inline-block; }
+    .cv-imgCanvas { image-rendering: pixelated; cursor: crosshair; }
+    .cv-legend { margin-top: 1em; }
+    .cv-legend span { display: inline-block; width: 1.5em; height: 1.5em; vertical-align: middle; margin-right: 0.5em; border-radius: 3px; }
+    .cv-rle-same { background: #ffe0b2; border: 1px solid #ffb74d; }
+    .cv-rle-diff { background: #bbdefb; border: 1px solid #1976d2; }
+    .cv-tooltip {
+      position: fixed;
+      background: var(--cv-bg);
+      color: var(--cv-fg);
+      border: 1px solid #888;
+      padding: 0.3em 0.7em;
+      border-radius: 5px;
+      font-size: 0.95em;
+      pointer-events: none;
+      z-index: 10;
+      box-shadow: 0 2px 8px #0002;
+      display: none;
+      min-width: 180px;
+    }
+    .cv-note { font-size: 0.9em; color: #888; }
+    .cv-drag-rect {
+      position: absolute;
+      border: 2px dashed #1976d2;
+      background: rgba(25, 118, 210, 0.1);
+      pointer-events: none;
+      z-index: 20;
+    }
+    .cv-controls button {
+      background: linear-gradient(90deg, #1976d2 0%, #42a5f5 100%);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 0.5em 1.2em;
+      font-size: 1em;
+      font-weight: 500;
+      box-shadow: 0 2px 6px #1976d220;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+      margin-right: 0.5em;
+    }
+    .cv-controls button:hover, .cv-controls button:focus {
+      background: linear-gradient(90deg, #1565c0 0%, #1976d2 100%);
+      box-shadow: 0 4px 12px #1976d240;
+      transform: translateY(-2px) scale(1.04);
+    }
+    .cv-mode-label {
+      display: inline-block;
+      font-size: 1em;
+      font-weight: 600;
+      color: #1976d2;
+      margin-left: 1em;
+      letter-spacing: 0.03em;
+    }
+  </style>
+  <div class="cv-container">
+    <div class="cv-controls">
+      <div class="button-group">
+        <span class="file-input-wrapper">
+          <input type="file" id="cv-imgInput" accept="image/*">
+          <label for="cv-imgInput" class="file-label">Choose File</label>
+        </span>
+        <button id="cv-loadSample">Load Sample</button>
+        <button id="cv-resetZoom">Reset Zoom</button>
+      </div>
+      <span id="cv-modeLabel" class="cv-mode-label">Image Mode: RGB</span>
+      <div class="button-group">
+        <label for="cv-lineSelect">Line:</label>
+        <input type="number" id="cv-lineSelect" min="0" value="0">
+        <button id="cv-showLine">Show Line</button>
+        <button id="cv-showAll">Show All</button>
+      </div>
+      <span class="cv-note">Tip: Drag to zoom, double-click to reset.</span>
+    </div>
+    <div class="cv-canvas-wrap" style="position:relative;">
+      <canvas id="cv-imgCanvas" width="256" height="256" class="cv-imgCanvas"></canvas>
+      <div id="cv-tooltip" class="cv-tooltip"></div>
+      <div id="cv-dragRect" class="cv-drag-rect" style="display:none"></div>
+    </div>
+    <div class="cv-legend">
+      <span class="cv-rle-same"></span>RLE Same &nbsp;
+      <span class="cv-rle-diff"></span>RLE Diff
+    </div>
+  </div>
+  <script>
+  (function(){
+    let imgData = null, mode = 'rgb', scale = 16, offsetX = 0, offsetY = 0;
+    let rleLines = [], showLineOnly = null;
+    let dragStart = null, panStart = null, dragging = false;
+    const canvas = document.getElementById('cv-imgCanvas');
+    const ctx = canvas.getContext('2d');
+    const tooltip = document.getElementById('cv-tooltip');
+    const dragRectDiv = document.getElementById('cv-dragRect');
+    const MAX_IMG_SIZE = 64;
+    const CANVAS_SIZE = 512;
+    canvas.width = CANVAS_SIZE;
+    canvas.height = CANVAS_SIZE;
+    let minScale = 1, maxScale = 64;
+    function rgb888_to_rgb565(r, g, b) {
+      let val = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
+      return [ (val >> 8) & 0xFF, val & 0xFF ];
+    }
+    function compressLine(pixels, is_rgba) {
+      let b_per_val = is_rgba ? 3 : 2;
+      let pix_vals = [];
+      for (let i = 0; i < pixels.length; ++i) {
+        if (is_rgba) {
+          let [r,g,b,a] = pixels[i];
+          let rgb565 = rgb888_to_rgb565(r,g,b);
+          pix_vals.push([a, ...rgb565]);
+        } else {
+          let [r,g,b] = pixels[i];
+          let rgb565 = rgb888_to_rgb565(r,g,b);
+          pix_vals.push(rgb565);
+        }
+      }
+      pix_vals = pix_vals.map(arr => arr.flat());
+      let compressed = [];
+      let count = 1, same_val = false, prev_val = pix_vals[0], segment_vals = prev_val.slice();
+      for (let i_val = 1; i_val < pix_vals.length; ++i_val) {
+        let val = pix_vals[i_val];
+        let is_same = JSON.stringify(val) === JSON.stringify(prev_val);
+        if (is_same) {
+          if (!same_val) {
+            if (i_val > 0) {
+              segment_vals = segment_vals.slice(0, segment_vals.length - b_per_val);
+              count -= 1;
+              while (count > 0) {
+                let subsegment_count = Math.min(0x7F, count);
+                let subsegment_vals = segment_vals.slice(0, subsegment_count * b_per_val);
+                let prefix = subsegment_count;
+                compressed.push({type:'diff', prefix, vals: subsegment_vals.slice(), start:i_val-count, len:subsegment_count});
+                segment_vals = segment_vals.slice(subsegment_count * b_per_val);
+                count -= subsegment_count;
+              }
+              segment_vals = [];
+            }
+            count = 1;
+            same_val = true;
+          }
+          count += 1;
+        } else {
+          if (same_val) {
+            while (count > 0) {
+              let subsegment_count = Math.min(0x7F, count);
+              let prefix = 0x80 | subsegment_count;
+              let pix_val = prev_val;
+              compressed.push({type:'same', prefix, vals: pix_val.slice(), start:i_val-count, len:subsegment_count});
+              count -= subsegment_count;
+            }
+            count = 1;
+            same_val = false;
+            segment_vals = [];
+          } else {
+            count += 1;
+          }
+          segment_vals = segment_vals.concat(val);
+        }
+        prev_val = val;
+      }
+      if (same_val) {
+        while (count > 0) {
+          let subsegment_count = Math.min(0x7F, count);
+          let prefix = 0x80 | subsegment_count;
+          compressed.push({type:'same', prefix, vals: prev_val.slice(), start:pixels.length-count, len:subsegment_count});
+          count -= subsegment_count;
+        }
+      } else {
+        while (count > 0) {
+          let subsegment_count = Math.min(0x7F, count);
+          let prefix = subsegment_count;
+          let subsegment_vals = segment_vals.slice(0, subsegment_count * b_per_val);
+          compressed.push({type:'diff', prefix, vals: subsegment_vals.slice(), start:pixels.length-count, len:subsegment_count});
+          segment_vals = segment_vals.slice(subsegment_count * b_per_val);
+          count -= subsegment_count;
+        }
+      }
+      return compressed;
+    }
+    function fitToView() {
+      if (!imgData) return;
+      const width = imgData.width, height = imgData.height;
+      scale = Math.max(1, Math.floor(Math.min(CANVAS_SIZE / width, CANVAS_SIZE / height)));
+      minScale = 1;
+      offsetX = 0;
+      offsetY = 0;
+      clampPan();
+    }
+    function clampPan() {
+      if (!imgData) return;
+      const width = imgData.width, height = imgData.height;
+      const viewW = Math.floor(CANVAS_SIZE / scale);
+      const viewH = Math.floor(CANVAS_SIZE / scale);
+      offsetX = Math.max(0, Math.min(offsetX, width - viewW));
+      offsetY = Math.max(0, Math.min(offsetY, height - viewH));
+    }
+    function drawImageAndOverlay() {
+      if (!imgData) return;
+      const width = imgData.width, height = imgData.height;
+      // Clear canvas with theme background
+      let bg = getComputedStyle(document.documentElement).getPropertyValue('--cv-bg') || '#fff';
+      ctx.save();
+      ctx.setTransform(1,0,0,1,0,0);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = bg.trim();
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.restore();
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+      // Compute visible region in image coordinates
+      const viewW = Math.floor(CANVAS_SIZE / scale);
+      const viewH = Math.floor(CANVAS_SIZE / scale);
+      const sx = Math.floor(offsetX);
+      const sy = Math.floor(offsetY);
+      // Create a temp canvas for the visible region
+      let tmpCanvas = document.createElement('canvas');
+      tmpCanvas.width = width;
+      tmpCanvas.height = height;
+      let tmpCtx = tmpCanvas.getContext('2d');
+      tmpCtx.putImageData(imgData, 0, 0);
+      // Draw the visible region, pixelated, never downscale
+      ctx.drawImage(tmpCanvas, sx, sy, viewW, viewH, 0, 0, viewW*scale, viewH*scale);
+      // Draw overlays
+      for (let y = sy; y < sy + viewH; ++y) {
+        if (y < 0 || y >= height) continue;
+        if (showLineOnly !== null && y !== showLineOnly) continue;
+        let rle = rleLines[y];
+        let x = 0;
+        for (let seg of rle) {
+          let segStart = x;
+          let segEnd = x + seg.len;
+          // Only draw if segment is in view
+          if (segEnd > sx && segStart < sx + viewW) {
+            ctx.save();
+            ctx.globalAlpha = 0.35;
+            ctx.strokeStyle = seg.type === 'same' ? '#ff9800' : '#1976d2';
+            ctx.lineWidth = 2;
+            ctx.fillStyle = seg.type === 'same' ? '#ffe0b2' : '#bbdefb';
+            let drawX = (Math.max(segStart, sx) - sx) * scale;
+            let drawY = (y - sy) * scale;
+            let drawW = (Math.min(segEnd, sx+viewW) - Math.max(segStart, sx)) * scale;
+            ctx.fillRect(drawX, drawY, drawW, scale);
+            ctx.strokeRect(drawX, drawY, drawW, scale);
+            ctx.restore();
+            seg._canvasRect = [drawX, drawY, drawW, scale, y, segStart];
+          }
+          x += seg.len;
+        }
+      }
+      ctx.restore();
+    }
+    function getMouseSegment(mx, my) {
+      if (!imgData) return null;
+      const width = imgData.width, height = imgData.height;
+      // Map mouse to image coordinates
+      const viewW = Math.floor(CANVAS_SIZE / scale);
+      const viewH = Math.floor(CANVAS_SIZE / scale);
+      const sx = Math.floor(offsetX);
+      const sy = Math.floor(offsetY);
+      let x = Math.floor(mx / scale) + sx;
+      let y = Math.floor(my / scale) + sy;
+      if (x < 0 || y < 0 || x >= width || y >= height) return null;
+      let rle = rleLines[y];
+      let acc = 0;
+      for (let seg of rle) {
+        if (x >= acc && x < acc + seg.len) return {...seg, y, x:acc};
+        acc += seg.len;
+      }
+      return null;
+    }
+    canvas.addEventListener('mousemove', e => {
+      let rect = canvas.getBoundingClientRect();
+      let mx = e.clientX - rect.left, my = e.clientY - rect.top;
+      let seg = getMouseSegment(mx, my);
+      if (seg) {
+        tooltip.style.display = 'block';
+        tooltip.style.left = (e.clientX + 10) + 'px';
+        tooltip.style.top = (e.clientY + 10) + 'px';
+        tooltip.innerHTML = `
+          <b>Line ${seg.y}, X ${seg.x}</b><br>
+          Type: <span class="cv-rle-${seg.type}">${seg.type.toUpperCase()}</span><br>
+          Length: ${seg.len}<br>
+          Prefix: 0x${seg.prefix.toString(16)}<br>
+          Bytes: ${seg.vals.map(b=>b.toString(16).padStart(2,'0')).join(' ')}
+        `;
+      } else {
+        tooltip.style.display = 'none';
+      }
+    });
+    canvas.addEventListener('mouseleave', ()=>{ tooltip.style.display='none'; });
+    canvas.addEventListener('mousedown', function(e) {
+      let rect = canvas.getBoundingClientRect();
+      dragStart = {x: e.clientX - rect.left, y: e.clientY - rect.top};
+      panStart = {x: offsetX, y: offsetY};
+      dragging = true;
+    });
+    canvas.addEventListener('mousemove', function(e) {
+      if (!dragging) return;
+      let rect = canvas.getBoundingClientRect();
+      let dx = Math.round((e.clientX - rect.left - dragStart.x) / scale);
+      let dy = Math.round((e.clientY - rect.top - dragStart.y) / scale);
+      offsetX = panStart.x - dx;
+      offsetY = panStart.y - dy;
+      clampPan();
+      drawImageAndOverlay();
+    });
+    canvas.addEventListener('mouseup', function(e) {
+      dragging = false;
+    });
+    canvas.addEventListener('wheel', function(e) {
+      if (!imgData) return;
+      e.preventDefault();
+      let rect = canvas.getBoundingClientRect();
+      let mx = e.clientX - rect.left;
+      let my = e.clientY - rect.top;
+      let wx = Math.floor(offsetX + mx / scale);
+      let wy = Math.floor(offsetY + my / scale);
+      let prevScale = scale;
+      if (e.deltaY < 0) {
+        scale = Math.min(scale * 2, maxScale);
+      } else {
+        scale = Math.max(Math.floor(scale / 2), minScale);
+      }
+      // Keep the mouse position fixed relative to the image
+      offsetX = wx - Math.floor(mx / scale);
+      offsetY = wy - Math.floor(my / scale);
+      clampPan();
+      drawImageAndOverlay();
+    }, { passive: false });
+    canvas.addEventListener('dblclick', function() {
+      fitToView();
+      drawImageAndOverlay();
+    });
+    function detectImageMode(imgData) {
+      // Returns 'rgba' if any pixel has alpha != 255, else 'rgb'
+      let d = imgData.data;
+      for (let i = 3; i < d.length; i += 4) {
+        if (d[i] !== 255) return 'rgba';
+      }
+      return 'rgb';
+    }
+    function processImage() {
+      if (!imgData) return;
+      mode = detectImageMode(imgData);
+      document.getElementById('cv-modeLabel').textContent = `Image Mode: ${mode.toUpperCase()}`;
+      let width = imgData.width, height = imgData.height;
+      let is_rgba = (mode === 'rgba');
+      rleLines = [];
+      for (let y = 0; y < height; ++y) {
+        let row = [];
+        for (let x = 0; x < width; ++x) {
+          let idx = (y*width + x) * 4;
+          let r = imgData.data[idx], g = imgData.data[idx+1], b = imgData.data[idx+2], a = imgData.data[idx+3];
+          row.push(is_rgba ? [r,g,b,a] : [r,g,b]);
+        }
+        rleLines.push(compressLine(row, is_rgba));
+      }
+      drawImageAndOverlay();
+    }
+    function loadImageFromFile(file) {
+      let reader = new FileReader();
+      reader.onload = function(e) {
+        let imgEl = new window.Image();
+        imgEl.onload = function() {
+          // Downscale if too large
+          let scaleDown = Math.max(imgEl.width, imgEl.height) > MAX_IMG_SIZE
+            ? MAX_IMG_SIZE / Math.max(imgEl.width, imgEl.height)
+            : 1;
+          let w = Math.max(1, Math.round(imgEl.width * scaleDown));
+          let h = Math.max(1, Math.round(imgEl.height * scaleDown));
+          let tmpCanvas = document.createElement('canvas');
+          tmpCanvas.width = w;
+          tmpCanvas.height = h;
+          let tmpCtx = tmpCanvas.getContext('2d');
+          tmpCtx.drawImage(imgEl, 0, 0, w, h);
+          imgData = tmpCtx.getImageData(0, 0, w, h);
+          document.getElementById('cv-lineSelect').max = h-1;
+          showLineOnly = null;
+          offsetX = 0; offsetY = 0; scale = 16;
+          processImage();
+        };
+        imgEl.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+    document.getElementById('cv-imgInput').addEventListener('change', function(e){
+      if (e.target.files && e.target.files[0]) {
+        loadImageFromFile(e.target.files[0]);
+      }
+    });
+    document.getElementById('cv-resetZoom').addEventListener('click', function() {
+      fitToView();
+      drawImageAndOverlay();
+    });
+    document.getElementById('cv-showLine').addEventListener('click', function() {
+      let line = parseInt(document.getElementById('cv-lineSelect').value);
+      showLineOnly = isNaN(line) ? null : line;
+      drawImageAndOverlay();
+    });
+    document.getElementById('cv-showAll').addEventListener('click', function() {
+      showLineOnly = null;
+      drawImageAndOverlay();
+    });
+    document.getElementById('cv-loadSample').addEventListener('click', function() {
+      // 32x32: checkerboard + blue circle + red diagonal
+      let w = 32, h = 32;
+      let tmpCanvas = document.createElement('canvas');
+      tmpCanvas.width = w; tmpCanvas.height = h;
+      let tmpCtx = tmpCanvas.getContext('2d');
+      // Draw checkerboard
+      for (let y = 0; y < h; ++y) for (let x = 0; x < w; ++x) {
+        let c = ((x >> 3) & 1) ^ ((y >> 3) & 1) ? '#e0e0e0' : '#ffffff';
+        tmpCtx.fillStyle = c;
+        tmpCtx.fillRect(x, y, 1, 1);
+      }
+      // Draw blue circle
+      tmpCtx.beginPath();
+      tmpCtx.arc(w/2, h/2, 11, 0, 2 * Math.PI);
+      tmpCtx.closePath();
+      tmpCtx.fillStyle = 'rgba(33, 150, 243, 0.85)';
+      tmpCtx.fill();
+      // Draw red diagonal
+      tmpCtx.strokeStyle = 'rgba(220, 44, 44, 0.95)';
+      tmpCtx.lineWidth = 2.2;
+      tmpCtx.beginPath();
+      tmpCtx.moveTo(2, 2);
+      tmpCtx.lineTo(w-3, h-3);
+      tmpCtx.stroke();
+      imgData = tmpCtx.getImageData(0, 0, w, h);
+      document.getElementById('cv-lineSelect').max = h-1;
+      showLineOnly = null;
+      offsetX = 0; offsetY = 0; scale = 16;
+      processImage();
+    });
+    // Load sample on first load
+    document.getElementById('cv-loadSample').click();
+  })();
+  </script>
+</div>
 
 ## Using Python to parse C-style structure data
 
