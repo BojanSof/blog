@@ -1,0 +1,145 @@
+:root {
+  --cv-bg: #fff;
+  --cv-fg: #222;
+}
+.cv-container {
+  max-width: 900px;
+  margin: 2em auto;
+  padding: 2em;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px #0001;
+  background: var(--cv-bg) !important;
+  color: var(--cv-fg) !important;
+  transition: background 0.2s, color 0.2s;
+  position: relative;
+}
+html[data-theme='light'] .cv-container {
+  --cv-bg: #f5f5f5;
+  --cv-fg: #212121;
+}
+html[data-theme='dark'] .cv-container {
+  --cv-bg: #1e1e1e;
+  --cv-fg: #e0e0e0;
+}
+body .cv-container {
+  position: relative;
+}
+.cv-controls {
+  margin-bottom: 1em;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.7em 1em;
+}
+.cv-controls .button-group {
+  display: flex;
+  gap: 0.5em;
+  align-items: center;
+}
+.cv-controls .file-input-wrapper {
+  position: relative;
+  display: inline-block;
+}
+.cv-controls input[type="file"] {
+  opacity: 0;
+  width: 0.1px;
+  height: 0.1px;
+  position: absolute;
+  z-index: -1;
+}
+.cv-controls .file-label {
+  background: linear-gradient(90deg, #1976d2 0%, #42a5f5 100%);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  box-shadow: 0 2px 6px #1976d220;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+  margin-right: 0.5em;
+  display: inline-block;
+}
+.cv-controls .file-label:hover, .cv-controls .file-label:focus {
+  background: linear-gradient(90deg, #1565c0 0%, #1976d2 100%);
+  box-shadow: 0 4px 12px #1976d240;
+  transform: translateY(-2px) scale(1.04);
+}
+.cv-controls input[type="number"] {
+  border: 1.5px solid #1976d2;
+  border-radius: 6px;
+  padding: 0.4em 0.7em;
+  font-size: 1em;
+  width: 4em;
+  outline: none;
+  transition: border 0.2s, box-shadow 0.2s;
+  box-shadow: 0 1px 3px #1976d210;
+  background: var(--cv-bg);
+  color: #1976d2;
+  font-weight: 600;
+}
+.cv-controls input[type="number"]:focus {
+  border: 2px solid #1565c0;
+  box-shadow: 0 2px 8px #1976d220;
+}
+.cv-controls label {
+  font-size: 1em;
+  margin-right: 0.3em;
+  color: #1976d2;
+  font-weight: 500;
+}
+.cv-canvas-wrap { position: relative; border: 1px solid #ccc; background: var(--cv-bg); display: inline-block; }
+.cv-imgCanvas { image-rendering: pixelated; cursor: crosshair; }
+.cv-legend { margin-top: 1em; }
+.cv-legend span { display: inline-block; width: 1.5em; height: 1.5em; vertical-align: middle; margin-right: 0.5em; border-radius: 3px; }
+.cv-rle-same { background: #ffe0b2; border: 1px solid #ffb74d; }
+.cv-rle-diff { background: #bbdefb; border: 1px solid #1976d2; }
+.cv-tooltip {
+  position: fixed;
+  background: var(--cv-bg);
+  color: var(--cv-fg);
+  border: 1px solid #888;
+  padding: 0.3em 0.7em;
+  border-radius: 5px;
+  font-size: 0.95em;
+  pointer-events: none;
+  z-index: 10;
+  box-shadow: 0 2px 8px #0002;
+  display: none;
+  min-width: 180px;
+}
+.cv-note { font-size: 0.9em; color: #888; }
+.cv-drag-rect {
+  position: absolute;
+  border: 2px dashed #1976d2;
+  background: rgba(25, 118, 210, 0.1);
+  pointer-events: none;
+  z-index: 20;
+}
+.cv-controls button {
+  background: linear-gradient(90deg, #1976d2 0%, #42a5f5 100%);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  box-shadow: 0 2px 6px #1976d220;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+  margin-right: 0.5em;
+}
+.cv-controls button:hover, .cv-controls button:focus {
+  background: linear-gradient(90deg, #1565c0 0%, #1976d2 100%);
+  box-shadow: 0 4px 12px #1976d240;
+  transform: translateY(-2px) scale(1.04);
+}
+.cv-mode-label {
+  display: inline-block;
+  font-size: 1em;
+  font-weight: 600;
+  color: #1976d2;
+  margin-left: 1em;
+  letter-spacing: 0.03em;
+}

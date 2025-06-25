@@ -1,0 +1,78 @@
+.hex-view {
+  font-family: monospace;
+  background: var(--hex-bg);
+  color: var(--hex-fg);
+  padding: 1em;
+  overflow-x: auto;
+  border: 1px solid var(--hex-border);
+  margin-bottom: 1em;
+  position: relative;
+}
+.hex-filename {
+  position: absolute;
+  top: 0.5em;
+  left: 1em;
+  font-weight: bold;
+  font-family: monospace;
+  font-size: 0.95em;
+  color: var(--hex-fg);
+}
+.hex-line {
+  white-space: nowrap;
+}
+.byte-span {
+  display: inline-block;
+  padding: 0.1em 0.4em;
+  margin-right: 0.1em;
+  border-radius: 4px;
+  position: relative;
+  pointer-events: auto;
+}
+.highlighted {
+  background-color: #b3e5fc;
+}
+.tooltip {
+  position: absolute;
+  background: var(--tooltip-bg);
+  color: var(--tooltip-fg);
+  padding: 0.3em 0.5em;
+  border-radius: 4px;
+  font-size: 0.8em;
+  white-space: nowrap;
+  z-index: 9999;
+  display: none;
+  pointer-events: none;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em;
+  margin-top: 0.5em;
+  font-size: 0.85em;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+}
+.legend-color {
+  width: 12px;
+  height: 12px;
+  display: inline-block;
+  border: 1px solid #333;
+}
+html[data-theme='light'] .hex-view {
+  --hex-bg: #f5f5f5;
+  --hex-fg: #212121;
+  --hex-border: #ccc;
+  --tooltip-bg: #333;
+  --tooltip-fg: #fff;
+}
+html[data-theme='dark'] .hex-view {
+  --hex-bg: #1e1e1e;
+  --hex-fg: #e0e0e0;
+  --hex-border: #444;
+  --tooltip-bg: #eee;
+  --tooltip-fg: #111;
+}
