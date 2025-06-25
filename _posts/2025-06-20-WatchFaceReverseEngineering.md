@@ -1,5 +1,5 @@
 ---
-title: Reverse Engineering Smartwatch Watch Face format
+title: Reverse engineering smartwatch watch face format
 date: 2025-06-20
 categories: [Reverse Engineering, Smartwatch]
 tags: [reverse engineering, smartwatch, python, watch face]
@@ -7,8 +7,6 @@ math: false
 image:
   path: /assets/img/smawf/cover.webp
 ---
-
-# Reverse Engineering Smartwatch Watch Face format
 
 In this blog post, I am going to provide insights on the format used for storing watch faces in a cheap smart watch limited memory.
 The cheap smart watches are basically an embedded system, that contain SoC which typically integrates all necessary functions for the smart watch, most notably:
