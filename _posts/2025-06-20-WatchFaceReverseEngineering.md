@@ -136,6 +136,7 @@ The lists can have different sizes in different watch faces, so every watch face
 
 The following hex-view is from the `10011.bin` watch face file, and provides the most basic file structure.
 
+{% raw %}
 <div class="hex-view" 
      data-src="{{site.baseurl}}/assets/files/smawf/10011.bin"
      data-width="16"
@@ -150,6 +151,7 @@ The following hex-view is from the `10011.bin` watch face file, and provides the
        {"start":812, "length":709992, "color":"#168876", "label":"List of images data"}
      ]'>
 </div>
+{% endraw %}
 
 ### Data Header
 
@@ -164,6 +166,7 @@ For the `10011.bin` watch face, we can see that it has 122 (`0x007a`) image asse
 
 Now let's take a closer look at the block info structure, by inspecting single instance of this structure.
 
+{% raw %}
 <div class="hex-view" 
      data-src="{{site.baseurl}}/assets/files/smawf/10011.bin"
      data-start="4"
@@ -187,6 +190,7 @@ Now let's take a closer look at the block info structure, by inspecting single i
        {"start":23, "length":1, "color":"#feae5e", "label":"Y-axis rotation center*"}
      ]'>
 </div>
+{% endraw %}
 
 To explain these fields, we will refer to few illustrations.
 Some of the block fields are used only for specific block types.
@@ -281,6 +285,7 @@ The color value for the pixel can be 2-bytes long for RGB or 3-bytes long for RG
 
 Below you can interactively explore how the smartwatch image compression works. Load your own image or use the sample, zoom and pan, and inspect the RLE segments visually:
 
+{% raw %}
 <div id="compression-visualizer-blog">
   <div class="cv-container">
     <div class="cv-controls">
@@ -312,6 +317,7 @@ Below you can interactively explore how the smartwatch image compression works. 
     </div>
   </div>
 </div>
+{% endraw %}
 
 ## Using Python to parse C-style structure data
 
@@ -456,6 +462,7 @@ Some of these devices have very good screens, long battery life, but it would be
 Sadly, although this watch had very good screen and I really loved it, after one month, the battery stopped charging and was deemed as irreparable by the service company of the place where it was bought.
 But it sure did provide me good fun during the Holiday season while it was working!
 
+{% raw %}
 <!-- Need to change this in future, for better re-use -->
 <!-- For hexview, copied from /assets/styles/hexview.css -->
 <style>
@@ -1156,3 +1163,4 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById('cv-loadSample').click();
 })();
 </script>
+{% endraw %}
