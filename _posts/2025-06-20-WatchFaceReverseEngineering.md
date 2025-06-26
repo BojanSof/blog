@@ -23,6 +23,9 @@ The image below shows the block diagram of JL7012F chip, extracted from the data
 
 ![JL7012F Block Diagram](/assets/img/smawf/jl7012f-block-diagram.png)
 
+> The source code for the project is available on [GitHub](https://github.com/BojanSof/sma-wf-editor).
+{: .prompt-info }
+
 > This blog post is purely for educational purposes, without intention to violate the terms of service of the smart watch. It would be great if the manufacturers provide watch face editing tools for such watch faces so the users can customize their devices to their likings.
 {: .prompt-warning }
 
@@ -442,6 +445,9 @@ As final thing for this project, I've created graphical interface that allows to
 The GUI provides block info editor on the left side, with graphical preview and editor on the right side, which allows to move, scale and rotate the blocks.
 It allows to easily load and save watch face files.
 There are also tools to create preview of the watch face by utilizing the `Tools -> Create Preview` functionality, or save all image assets in a given folder, by using `Tools -> Save all images`.
+
+> The source code for the GUI and how to run it is available on [GitHub](https://github.com/BojanSof/sma-wf-editor).
+{: .prompt-info }
 
 ## Conclusion
 
