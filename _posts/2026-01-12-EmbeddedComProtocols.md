@@ -68,3 +68,44 @@ On the data link layer, the [UART](https://en.wikipedia.org/wiki/Universal_async
 
 Finally, this bit stream is converted to appropriate voltage levels with correct timing, depending on the used baud rate for the communication.
 If we use baud rate of 9600, then each bit has duration of 1/9600 ≈ 104 us, bit 0 is represented with voltage level between 5 V and 15 V in RS-232, while bit 1 is represented with voltage level between -15 V and -5 V.
+
+The receiving side performs the steps described in each layer, but in reverse direction.
+
+In this blog post we are going to take a deeper look at the presentation and framing layers, or to be more precise we will look at some options for the **serialization** and **framing** of the data.
+
+## Presentation layer - Serialization
+
+In order to be able to transmit the data stored in the high-level objects in the application layer, we need a way to convert the high-level object data into stream of bytes, or we need to [**serialize**](https://en.wikipedia.org/wiki/Serialization) it.
+Serialization is also used to convert the data not just for transmitting purposes, but also for storing purposes.
+
+There are popular serialization formats used very often during development, like JSON, YAML, Protocol Buffers, etc., each having their application based on pros and cons.
+We can categorize the serialization formats using multiple categories:
+- *human readability*, how easy can humans understand the serialized data, which is closely related to towards which of the human or machine the formats are optimized for,
+- *compactness*, how small is the serialized data,
+- *speed*, related to the implementation complexity, how fast the data can be serialized by the device,
+- *schema*, the blueprint describing the fields, types and the structure of the data.
+
+The following table lists some of the most famous serialization formats optimized for human readability, often used during embedded system development, along with the listed categories (the difference in the categories is relative between the items in the table):
+
+| Serialization format                                             | Human readability    | Compactness | Schema                     | Best use                        |
+| :--------------------------------------------------------------- | :------------------: | :---------: | :------------------------: | :------------------------------ |
+| [JSON](https://en.wikipedia.org/wiki/JSON)                       |    ✅ High           |   🔴 Low    | None (Self-describing)    | Web (Cloud, APIs)               |
+| [YAML](https://en.wikipedia.org/wiki/YAML)                       |    ✅✅ Excellent    |   🔴 Low    | None (Self-describing)    | Configuration                   |
+| [CSV](https://en.wikipedia.org/wiki/Comma-separated_values)      |    ✅ High           |   🟡 Medium | Implicit (Column order)   | Data logging                    |
+
+One of the most prominent serialization formats is JSON, often used to exchange data between devices on network, often clients and servers.
+It is dominant in IoT, enabling devices to send data (often sensor data) and receive commands via protocols like [MQTT](https://en.wikipedia.org/wiki/MQTT) and HTTP/[REST APIs](https://en.wikipedia.org/wiki/REST).
+CSV format is often used for dumping mainly sensor data to external memory medium, like SD card, for easy retrieval and analysis on computer for example.
+
+For more constrained embedded devices, it is better to use machine optimized serialization formats, which are not human readable, but much more compact then text formats which are optimized for humans.
+They often have better serialization and deserialization speeds compared to the human readable formats on the same platforms.
+The table below summarizes some of the most used machine optimized protocols in embedded devices.
+
+| Serialization format                                             | Compactness | Schema                     | Best use                        |
+| :--------------------------------------------------------------- | :---------: | :------------------------: | :------------------------------ |
+| C structs                                                        |   🔴 Low    | None (Self-describing)    | Web (Cloud, APIs)               |
+| Protocol Buffers (nanopb)                                        |   🔴 Low    | None (Self-describing)    | Configuration                   |
+| CBOR      |   🟡 Medium | Implicit (Column order)   | Data logging                    |
+| MessagePack      |   🟡 Medium | Implicit (Column order)   | Data logging                    |
+| FlatBuffers      |   🟡 Medium | Implicit (Column order)   | Data logging                    |
+| ModBus      |   🟡 Medium | Implicit (Column order)   | Data logging                    |
