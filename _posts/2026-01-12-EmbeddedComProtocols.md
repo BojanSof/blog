@@ -99,7 +99,87 @@ CSV format is often used for dumping mainly sensor data to external memory mediu
 
 For more constrained embedded devices, it is better to use machine optimized serialization formats, which are not human readable, but much more compact then text formats which are optimized for humans.
 They often have better serialization and deserialization speeds compared to the human readable formats on the same platforms.
-The table below summarizes some of the most used machine optimized protocols in embedded devices.
+And to deserialize the data, typically the receiving side needs to know the schema of the protocol.
+We will cover some of the most used machine optimized serialization formats next.
+
+### Custom binary packing
+
+One of the most common form of serialization is to perform custom binary packing of the fields.
+This approach is the most compact form of serialization, in which the developer has total control of how the bytes are used.
+Basically, the developer sets the endianess of the data, how many bytes each field occupies and defines in which order the high-level data fields are serialized.
+We need to know all of these things to deserialize the data.
+
+```c
+struct SensorData {
+  uint64_t timestamp;
+  int16_t temperature;
+  uint8_t humidity;
+};
+// high-level data
+struct SensorData data = {
+  .timestamp = 1768414055,
+  .temperature = 24.6,
+  .humidity = 51
+};
+// custom binary serialization, little-endian
+uint8_t buffer[11] = {};
+buffer[0] = timestamp & 0xFF;
+buffer[1] = (timestamp >> 8) & 0xFF;
+buffer[2] = (timestamp >> 16) & 0xFF;
+buffer[3] = (timestamp >> 24) & 0xFF;
+buffer[4] = (timestamp >> 32) & 0xFF;
+buffer[5] = (timestamp >> 40) & 0xFF;
+buffer[6] = (timestamp >> 48) & 0xFF;
+buffer[7] = (timestamp >> 56) & 0xFF;
+
+buffer[8] = temperature & 0xFF;
+buffer[9] = (temperature >> 8) & 0xFF;
+
+buffer[10] = humidity;
+
+// custom binary deserialization
+struct SensorData deserializedData = {
+  .timestamp = (buffer[0]) |
+                (buffer[1] << 8) |
+                (buffer[2] << 16) |
+                (buffer[3] << 24) |
+                (buffer[4] << 32) |
+                (buffer[5] << 40) |
+                (buffer[6] << 48) |
+                (buffer[7] << 56),
+  .temperature = (buffer[8]) |
+                  (buffer[9] << 8),
+  .humidity = buffer[10]
+};
+```
+{: file='custom_binary_packing_simple.c'}
+
+If there are nested high-level objects, we can simply ensure that each nested object follows "the contract" - implement serialization method and the top-level object delegates the serialization buffer to each children object.
+In case of variable length data, such as arrays, one needs to encode their length too.
+
+The biggest drawback of custom binary packing is schema evolution, meaning adding new fields in the high-level object could break the receiver.
+For example, if we have high-level object containing the temperature and humidity values and we add pressure value in between, the receiver having the old data structure would incorrectly parse the bytes.
+To resolve this, versioning logic should be added to the serialization protocol, making the receiver side more complicated.
+
+**Pros**:
+- Full control over the bytes
+- Minimal size
+- Maximum performance
+
+**Cons**:
+- Potential complex implementation
+- Schema evolution issues
+- Lack of interoperability and tooling
+
+### Protocol Buffers
+
+### CBOR
+
+### FlatBuffers
+
+### Modbus
+
+
 
 | Serialization format                                             | Compactness | Schema                     | Best use                        |
 | :--------------------------------------------------------------- | :---------: | :------------------------: | :------------------------------ |
