@@ -171,7 +171,50 @@ To resolve this, versioning logic should be added to the serialization protocol,
 - Schema evolution issues
 - Lack of interoperability and tooling
 
+TODO: Link to more practical example...
+
 ### Protocol Buffers
+
+[Protocol Buffers (Protobuf)](https://protobuf.dev/) is a free and open-source cross-platform data format used to serialize structured data developed by Google.
+Protocol buffers require a Schema to describe how the data looks like, described in `.proto` file and then special compiler, called `protoc` will generate the required source file for the target language.
+In the background, protobuf uses [Tag-Length-Value (TLV)](https://en.wikipedia.org/wiki/Type%E2%80%93length%E2%80%93value) encoding scheme, which encodes the ID and type of each field (tag), the number of bytes to specify how many bytes consist dynamically sized payload (length) and the payload data (value).
+This is what makes protocol buffers backwards compatible, as deserializer can simply skip unknown tags.
+
+```protobuf
+syntax = "proto3";
+
+message SensorReading {
+  uint64 timestamp = 1;
+  float temperature = 2;
+  uint32 humidity = 3;
+}
+
+message DeviceInfo {
+  uint32 deviceID = 1;
+  string location = 2;
+}
+
+message SensorPacket {
+  DeviceInfo info = 1;
+  repeated SensorReading readings = 2;
+}
+```
+{: file='schema.proto'}
+
+In protobuf, *message* is the fundamental data structure used to define and exchange structured data.
+Each message is composed of multiple typed fields, which can also be another messages.
+There are few plain types that can be used for the fields, which use one of the [six wire encodings](https://protobuf.dev/programming-guides/encoding/#structure) to convert the data to the stream of bytes.
+One of the core protobuf wire encodings is variable-width integers (varints), which allow to encode integers with variable number of bytes.
+The plain types for the fields can be signed and unsigned integers, floating-point numbers, boolean values, arrays and strings with dynamic length.
+Protobuf also allows to define enums, which are implemented as integers in the background and unions using `oneof` fields.
+If there are missing fields in a message, protobuf will simply leave those fields out.
+
+The official Google protobuf libraries are general-purpose for computing environments with fewer memory constraints, opposed to embedded systems.
+For this reason, there is specialized ANSI-C library, called [`nanopb`](https://jpa.kapsi.fi/nanopb/), tailored towards embedded system with memory constraints, featuring [small code size (5-20 kB) and small RAM usage (~ 1 kB)](https://jpa.kapsi.fi/nanopb/docs/index.html#features-and-limitations).
+`nanopb` is also available ready to use in [Zephyr RTOS](https://www.zephyrproject.org/) applications.
+It is interesting to note that `nanopb` allows to complement the `.proto` schema files with `.options` files which modify the generator options, like maximum size of certain fields (like strings and arrays) in order to allocate the memories for them statically.
+
+TODO: Link to more practical example...
 
 ### CBOR
 
