@@ -246,6 +246,9 @@ A3                           # map(3)
 
 TODO: Link to more practical example...
 
+> There is a CBOR playground, which allows to take a look how CBOR represents data, by providing human-readable data using CBOR Diagnostic Notation, which is basically superset of JSON.
+{: .prompt-info }
+
 ### FlatBuffers
 
 ### Modbus
