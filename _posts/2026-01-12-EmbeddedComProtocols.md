@@ -218,6 +218,34 @@ TODO: Link to more practical example...
 
 ### CBOR
 
+[CBOR (Concise Binary Object Representation)](https://cbor.io/) is serialization format loosely based on JSON, allowing to exchange data structured as name-value pairs, but designed to be more efficient and compact.
+CBOR support extended set of data types for the fields compared to JSON, which include arbitrary-precision decimal numbers and "big integers", strings, binary data, arrays, maps, native date and time representation and more.
+
+CBOR encoding works in such way that there is initial byte, split in two parts:
+- Major Type (MT), the first 3 bytes, determining the field type: integer, string, array, map, etc.
+- Additional Information (AI), the next 5 bytes, typically representing the value of the field if it is small enough, or the length of the data that follows.
+
+CBOR is self-describing format, meaning it doesn't require schema like protobuf does.
+
+```cbor
+# JSON (size = 57 bytes): {"timestamp":1768414055,"temperature":24.6,"humidity":51}
+# CBOR (size = 49 bytes):
+A3                           # map(3)
+   69                        # text(9)
+      74696D657374616D70     # "timestamp"
+   C1                        # tag(1), tag for timestamp
+      1A 6967DB67            # unsigned(1768414055)
+   6B                        # text(11)
+      74656D7065726174757265 # "temperature"
+   FB 403899999999999A       # primitive(4627617502109211034)
+   68                        # text(8)
+      68756D6964697479       # "humidity"
+   18 33                     # unsigned(51)
+```
+{: file='example.cbor'}
+
+TODO: Link to more practical example...
+
 ### FlatBuffers
 
 ### Modbus
