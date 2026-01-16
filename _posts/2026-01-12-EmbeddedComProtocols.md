@@ -176,7 +176,7 @@ TODO: Link to more practical example...
 ### Protocol Buffers
 
 [Protocol Buffers (Protobuf)](https://protobuf.dev/) is a free and open-source cross-platform data format used to serialize structured data developed by Google.
-Protocol buffers require a Schema to describe how the data looks like, described in `.proto` file and then special compiler, called `protoc` will generate the required source file for the target language.
+Protocol buffers require a schema to describe how the data looks like, described in `.proto` file and then special compiler, called `protoc` will generate the required source file for the target language.
 In the background, protobuf uses [Tag-Length-Value (TLV)](https://en.wikipedia.org/wiki/Type%E2%80%93length%E2%80%93value) encoding scheme, which encodes the ID and type of each field (tag), the number of bytes to specify how many bytes consist dynamically sized payload (length) and the payload data (value).
 This is what makes protocol buffers backwards compatible, as deserializer can simply skip unknown tags.
 
@@ -250,6 +250,48 @@ TODO: Link to more practical example...
 {: .prompt-info }
 
 ### FlatBuffers
+
+[FlatBuffers](https://flatbuffers.dev/) is a cross platform open-source serialization library developed by Google, designed for maximum memory efficiency, allowing to directly access serialized data without parsing it first.
+Similarly to protobuf, it requires [schema](https://flatbuffers.dev/schema/) (`.fbs` file) to describe the data, and special compiler, [`flatc`](https://flatbuffers.dev/flatc/), which generates the source code for serialization and deserialization for the targeted language.
+FlatBuffers provide great backward compatibility.
+The maximum memory efficiency is achieved by utilizing relative offset to point to data.
+
+```flatbuffer
+table SensorReading {
+  timestamp: ulong;
+  temperature: float;
+  humidity: uint;
+}
+
+table DeviceInfo {
+  deviceID: uint;
+  location: string;
+}
+
+table SensorPacket {
+  info: DeviceInfo;
+  readings: [SensorReading];
+}
+
+root_type SensorPacket;
+```
+{: file='schema.fbs'}
+
+A *table* is the fundamental data structure used to define objects in flatbuffers.
+Each table consists of multiple typed fields which can also be tables.
+Each field is defined with name, type and optional default value, and fields can be optional.
+The built-in types for the fields include assortment of fixed-size integer and floating-point numbers (no varints like in protobuf), vectors and strings.
+It is possible to declare enumerations and unions too.
+There is also `struct` in flatbuffers, which compared to tables are fixed-size data structures with all fields being required.
+`struct` should be used only for known and fixed data, data that won't change in the future, as this will break the backward compatibility.
+
+Internally, flatbuffers format use `vtable` for each table which acts as a map for that object, holding the offsets for each field in the table.
+The `vtable` provides the backward compatibility, as older deserializer can simply ignore newer fields when checking for their offset.
+
+TODO: Link to more practical example...
+
+> One of the most famous framework for deploying machine-learning models on edge devices, [LiteRT](https://ai.google.dev/edge/litert) (previously Tensorflow Lite), uses `.tflite` FlatBuffer format to represent the models.
+{: .prompt-info }
 
 ### Modbus
 
