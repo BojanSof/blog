@@ -69,7 +69,7 @@ On the data link layer, the [UART](https://en.wikipedia.org/wiki/Universal_async
 Finally, this bit stream is converted to appropriate voltage levels with correct timing, depending on the used baud rate for the communication.
 If we use baud rate of 9600, then each bit has duration of 1/9600 ≈ 104 us, bit 0 is represented with voltage level between 5 V and 15 V in RS-232, while bit 1 is represented with voltage level between -15 V and -5 V.
 
-The receiving side performs the steps described in each layer, but in reverse direction.
+The receiving side performs the inverse steps in reverse layer order.
 
 In this blog post we are going to take a deeper look at the presentation and framing layers, or to be more precise we will look at some options for the **serialization** and **framing** of the data.
 
@@ -293,9 +293,94 @@ TODO: Link to more practical example...
 > One of the most famous framework for deploying machine-learning models on edge devices, [LiteRT](https://ai.google.dev/edge/litert) (previously Tensorflow Lite), uses `.tflite` FlatBuffer format to represent the models.
 {: .prompt-info }
 
-### Modbus
+## Framing layer
 
+After serialization, the structured data is converted to stream of bytes, but in that stream of bytes, it is not clear where the data starts and where it ends.
+For this reason, framing is performed on the stream to convert it to packet.
+There are few ways to perform the framing and we will explore them below.
 
+### Sync-Length framing
+
+One of the simplest ways to frame the serialized data is to insert custom header before the data.
+This header would have few bytes, consisting of sync bytes ("magic" bytes) and the length of the serialized data, thus called Sync-Length framing.
+The sync bytes provide self-synchronization of the protocol, meaning the receiver can start decoding mid-packet, will discard that packet and will start decoding correctly the packets from the next one.
+The sync bytes should have zero probability of appearing in the serialized data stream.
+In practice, having zero probability of raw serialized bytes to contain the sync bytes is impossible, but the probability can be made negligible.
+The probability can be made negligible by choosing longer sync bytes sequence and choosing the sync bytes in a way that they normally won't appear in the serialized data.
+
+This method is useful for framing sensor data from embedded devices, as often one can choose ASCII code for the magic bytes, which is quite hard to find in raw sensor readings.
+The length of the sync bytes should be 4 or more bytes.
+
+Beside having sync bytes and length in the header, it is often useful to add other fields in it, depending on the use-case.
+I find the following header structure useful:
+
+```
++--------------------+
+|    *Sync Bytes*    | 4 or more sync bytes
++--------------------+
+|  Protocol Version  | The protocol version allows to change the header in future, 1-3 bytes length
++--------------------+
+|  *Payload Length*  | The length of the serialized payload, typically 2 or 4 bytes, depending on the maximum payload size
++--------------------+
+|    Payload Type    | Type of the payload (i.e. sensor data, battery level, command, log message, etc.)
++--------------------+
+|       Flags        | Meta-information, like is data encrypted, is data compressed, is acknowledge requested, etc.
++--------------------+
+|  Sequence Number   | Simple counter, to detect packet loss, duplicates or out-of-order packets
++--------------------+
+```
+{: file="Header for sync-length framing"}
+
+The overhead is the length of the header, which is typically between 10-20 bytes.
+
+### COBS (Consistent Overhead Byte Stuffing)
+
+[COBS (Consistent Overhead Byte Stuffin)](https://en.wikipedia.org/wiki/Consistent_Overhead_Byte_Stuffing) is framing algorithm, typically used with UART, with goal of using specific byte value, typically zero (0x00) as a reliable packet delimiter, ensuring that the data itself never contains the delimiter.
+COBS guarantees that the added overhead is small and predictable (consistent).
+
+COBS works such that it removes every delimiter appearance, let's say 0x00, from the serialized data and replaces it with a number that tells the receiver where the next 0x00 was located.
+As all the delimiter bytes are removed from the data, it is safe to add the delimiter at the end of the byte stream to mark the packet boundary.
+
+```
+1. Serialized data: 0x11, 0x22, 0x00, 0x33
+2. Find the first 0x00 - index 2 (zero-based index)
+3. Start the packet with count to the first 0x00 (2 + 1 because of this added byte): 0x03
+4. Replace the 0x00 with distance to the next zero or end of data, in this case end of data
+5. Packet data so far: 0x03, 0x11, 0x22, 0x02, 0x33
+6. Add 0x00 at the end, as packet delimiter
+7. Final packet: 0x03, 0x11, 0x22, 0x02, 0x33
+```
+{: file='COBS example'}
+
+The overhead of COBS is 1 byte for each 254 bytes of data.
+COBS is also very robust and it is self-synchronizing.
+
+### SLIP (Serial Line Internet Protocol)
+
+[SLIP (Serial Line Internet Protocol)](https://en.wikipedia.org/wiki/Serial_Line_Internet_Protocol) is simple packet framing protocol, initially used for wrapping IP packets for transport over serial wires, but it is very useful for framing in embedded systems.
+In SLIP, two special bytes are used, one to act as packet delimiter (denoted as `END`) and another one for escaping or byte stuffing (denoted as `ESC`), which is used to resolve the issue of the data containing the packet delimiter.
+
+There are few rules for the escaping:
+1. If the data byte is `END`, it is replaced with 2-byte sequence `ESC ESC_END`, where `ESC_END` has different value from `END`.
+2. If the data byte is `ESC`, it is replaced with 2-byte sequence `ESC ESC_ESC`, where `ESC_ESC` has different value from `ESC`.
+
+Although start byte is not required, it is good idea to start the packet with `END`, to flush any garbage data before the packet.
+
+```
+END=0xC0, ESC=0xDB, ESC_END=0xDC, ESC_ESC=0xDD
+1. Serialized data: 0x11, 0xDB, 0x22, 0xC0
+2. 0x11, not special, write it to the packet
+2. 0xDB is ESC, replace it with ESC ESC_ESC, 0xDB 0xDD
+3. 0x22, not special, write it to the packet
+4. 0xC0 is END, replace it with ESC ESC_END, 0xDB 0xDC
+5. Packet data so far: 0x11, 0xDB, 0xDD, 0x22, 0xDB, 0xDC
+6. Add END at start and end
+7. Final packet: 0xC0, 0x11, 0xDB, 0xDD, 0x22, 0xDB, 0xDC, 0xC0
+```
+{: file='SLIP example'}
+
+The overhead of SLIP is unpredictable compared to COBS, and in worst-case, in which the data contains only ESC and END byte values, the overhead is 100%, as the number of bytes is doubled.
+SLIP is also very robust and self-synchronizing and SLIP decoder is very simple to implement.
 
 | Serialization format                                             | Compactness | Schema                     | Best use                        |
 | :--------------------------------------------------------------- | :---------: | :------------------------: | :------------------------------ |
