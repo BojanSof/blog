@@ -297,7 +297,7 @@ TODO: Link to more practical example...
 
 After serialization, the structured data is converted to stream of bytes, but in that stream of bytes, it is not clear where the data starts and where it ends.
 For this reason, framing is performed on the stream to convert it to packet.
-There are few ways to perform the framing and we will explore them below.
+There are many ways to perform the framing and we will explore some of them below.
 
 ### Sync-Length framing
 
@@ -332,6 +332,10 @@ I find the following header structure useful:
 {: file="Header for sync-length framing"}
 
 The overhead is the length of the header, which is typically between 10-20 bytes.
+
+### Length-prefix framing
+
+If the underlying transport is reliable (like TCP/IP, USB, BLE), the sync bytes from the Sync-Length framing are not necessary and the framing protocol can be simplified to **Length-Prefix** framing, which basically prefixes the payload with its length.
 
 ### COBS (Consistent Overhead Byte Stuffing)
 
@@ -381,6 +385,34 @@ END=0xC0, ESC=0xDB, ESC_END=0xDC, ESC_ESC=0xDD
 
 The overhead of SLIP is unpredictable compared to COBS, and in worst-case, in which the data contains only ESC and END byte values, the overhead is 100%, as the number of bytes is doubled.
 SLIP is also very robust and self-synchronizing and SLIP decoder is very simple to implement.
+
+### Which framing protocol to choose?
+
+The choice of framing protocol depends on the underlying transport protocol, as transport protocols differ in terms of realiability and the way of sending the data through the medium.
+
+Protocols like UART and RS-232 are unreliable, so COBS and SLIP are usually preferred for framing.
+On the other hand, when using USB CDC (Virtual Serial), which utilizes USB bulk transfers, is reliable as there is error correction and retransmission by the transport itself, so it is okay to use Length-Prefix framing in this case.
+
+SPI and I2C transports are master-slave synchronous transports, in which the master needs to know how many clock cycles to generate for the data exchange.
+For this reason, it is okay to use Length-Prefix framing, usually implemented with the Master first reading the header containing the length of the data, followed by the actual data transmission.
+
+TCP is reliable transport, so again it is okay to use Length-Prefix framing.
+TCP transport ensures packet are received in the correct order and handles error correction and retransmission logic.
+On the other hand, UDP is unreliable and packets can be received out of order, duplicates are possible and fragmentation needs to be handled manually.
+Typically this can be handled with the Length-Prefix framing, by ensuring to have a field for sequence number for the order correctness of the packets and way to handle the fragmentation in case data is larger than the UDP MTU (Maximum Transmission Unit), using fragment ID for example or utilizing the sequence number somehow.
+
+[BLE (Bluetooth Low Energy)](https://en.wikipedia.org/wiki/Bluetooth_Low_Energy) transport, using [Generic Attribute Profile (GATT)](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-54/out/en/host/generic-attribute-profile--gatt-.html), is reliable, but uses small packets, and MTU is usually in range between 20-240 bytes.
+It ensures that packets arrive in order, but the data should be chopped into smaller chunk manually (less than or equal to MTU).
+For this reason, Length-Prefix framing can be used, starting with special fragmentation byte, that only contains info if this chunk is the first chunk, the end chunk, or middle chunk, and the the first chunk should send the total length of the data, while the next chunks only include fragmentation byte.
+
+> BLE GATT supports two operations for transmitting data from one device, the peripheral, to another device, the central, notifications and indications.
+These operations are the way that enables the peripherals to send data to the central whenever they have new data, but the central needs to enable them first.
+The difference between the two is that indications need to be acknowledged by the **application** when the receiver processes the data.
+On the other hand, notifications don't need acknowledgment by the application, but if the receiver doesn't process the received notifications in time, it is possible that some data can be dropped, as the transmit queue of the sender will be full.
+Note that this is *application-level unreliability* of notifications, not *link-layer unreliability*.
+The link-layer in BLE is reliable and it ensures that the data is received in order, without errors.
+{: .prompt-info }
+
 
 | Serialization format                                             | Compactness | Schema                     | Best use                        |
 | :--------------------------------------------------------------- | :---------: | :------------------------: | :------------------------------ |
