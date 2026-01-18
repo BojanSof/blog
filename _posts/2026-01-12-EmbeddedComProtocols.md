@@ -171,8 +171,6 @@ To resolve this, versioning logic should be added to the serialization protocol,
 - Schema evolution issues
 - Lack of interoperability and tooling
 
-TODO: Link to more practical example...
-
 ### Protocol Buffers
 
 [Protocol Buffers (Protobuf)](https://protobuf.dev/) is a free and open-source cross-platform data format used to serialize structured data developed by Google.
@@ -214,8 +212,6 @@ For this reason, there is specialized ANSI-C library, called [`nanopb`](https://
 `nanopb` is also available ready to use in [Zephyr RTOS](https://www.zephyrproject.org/) applications.
 It is interesting to note that `nanopb` allows to complement the `.proto` schema files with `.options` files which modify the generator options, like maximum size of certain fields (like strings and arrays) in order to allocate the memories for them statically.
 
-TODO: Link to more practical example...
-
 ### CBOR
 
 [CBOR (Concise Binary Object Representation)](https://cbor.io/) is serialization format loosely based on JSON, allowing to exchange data structured as name-value pairs, but designed to be more efficient and compact.
@@ -244,10 +240,8 @@ A3                           # map(3)
 ```
 {: file='example.cbor'}
 
-TODO: Link to more practical example...
-
 > There is a CBOR playground, which allows to take a look how CBOR represents data, by providing human-readable data using CBOR Diagnostic Notation, which is basically superset of JSON.
-{: .prompt-info }
+{: .prompt-tip }
 
 ### FlatBuffers
 
@@ -288,8 +282,6 @@ There is also `struct` in flatbuffers, which compared to tables are fixed-size d
 Internally, flatbuffers format use `vtable` for each table which acts as a map for that object, holding the offsets for each field in the table.
 The `vtable` provides the backward compatibility, as older deserializer can simply ignore newer fields when checking for their offset.
 
-TODO: Link to more practical example...
-
 > One of the most famous framework for deploying machine-learning models on edge devices, [LiteRT](https://ai.google.dev/edge/litert) (previously Tensorflow Lite), uses `.tflite` FlatBuffer format to represent the models.
 {: .prompt-info }
 
@@ -316,11 +308,11 @@ I find the following header structure useful:
 
 ```
 +--------------------+
-|    *Sync Bytes*    | 4 or more sync bytes
+|    *Sync Bytes     | 4 or more sync bytes
 +--------------------+
 |  Protocol Version  | The protocol version allows to change the header in future, 1-3 bytes length
 +--------------------+
-|  *Payload Length*  | The length of the serialized payload, typically 2 or 4 bytes, depending on the maximum payload size
+|  *Payload Length   | The length of the serialized payload, typically 2 or 4 bytes, depending on the maximum payload size
 +--------------------+
 |    Payload Type    | Type of the payload (i.e. sensor data, battery level, command, log message, etc.)
 +--------------------+
@@ -390,7 +382,7 @@ SLIP is also very robust and self-synchronizing and SLIP decoder is very simple 
 
 The choice of framing protocol depends on the underlying transport protocol, as transport protocols differ in terms of realiability and the way of sending the data through the medium.
 
-Protocols like UART and RS-232 are unreliable, so COBS and SLIP are usually preferred for framing.
+Protocols like UART and RS-232 are unreliable, so Sync-Lenght, COBS and SLIP can be used, COBS and SLIP are usually preferred for framing.
 On the other hand, when using USB CDC (Virtual Serial), which utilizes USB bulk transfers, is reliable as there is error correction and retransmission by the transport itself, so it is okay to use Length-Prefix framing in this case.
 
 SPI and I2C transports are master-slave synchronous transports, in which the master needs to know how many clock cycles to generate for the data exchange.
@@ -412,6 +404,12 @@ On the other hand, notifications don't need acknowledgment by the application, b
 Note that this is *application-level unreliability* of notifications, not *link-layer unreliability*.
 The link-layer in BLE is reliable and it ensures that the data is received in order, without errors.
 {: .prompt-info }
+
+It is worth noting that altough some framing protocol may add only overhead with the chosen underlying transport, it is often beneficial for the framing protocl to add few more bytes as overhead.
+There are few reasons for this including transport-agnostic protocols and debuggability.
+For example, we see that Length-Prefix framing can be used with many underlying transports, making Sync-Length redundant.
+Still, by using Sync-Length protocol we make it possible to use variety of transports now or in the future.
+Also, we are able to debug issues more easily as the sync byte can typically be human-readable making easy to know where message starts in a hex dump.
 
 
 | Serialization format                                             | Compactness | Schema                     | Best use                        |
