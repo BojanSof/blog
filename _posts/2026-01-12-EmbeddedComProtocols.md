@@ -411,12 +411,19 @@ For example, we see that Length-Prefix framing can be used with many underlying 
 Still, by using Sync-Length protocol we make it possible to use variety of transports now or in the future.
 Also, we are able to debug issues more easily as the sync byte can typically be human-readable making easy to know where message starts in a hex dump.
 
+## Benchmarks
 
-| Serialization format                                             | Compactness | Schema                     | Best use                        |
-| :--------------------------------------------------------------- | :---------: | :------------------------: | :------------------------------ |
-| C structs                                                        |   🔴 Low    | None (Self-describing)    | Web (Cloud, APIs)               |
-| Protocol Buffers (nanopb)                                        |   🔴 Low    | None (Self-describing)    | Configuration                   |
-| CBOR      |   🟡 Medium | Implicit (Column order)   | Data logging                    |
-| MessagePack      |   🟡 Medium | Implicit (Column order)   | Data logging                    |
-| FlatBuffers      |   🟡 Medium | Implicit (Column order)   | Data logging                    |
-| ModBus      |   🟡 Medium | Implicit (Column order)   | Data logging                    |
+We will compare the serialization protocols by running benchmark on microcontroller platform.
+We will measure:
+- encoding time,
+- decoding time,
+- wire size,
+- memory usage (code and RAM).
+
+[STM32F411CE](https://www.st.com/en/microcontrollers-microprocessors/stm32f411.html) MCU board will be used, which has Cortex-M4 core with floating-point unit, running at 100 MHz max clock frequency, 128 kB of SRAM and 512 kB of Flash.
+The code for the benchmark is available on [GitHub](LINK_TODO).
+We are going to use CMake to manage the project and the dependencies.
+
+More details about the benchmark...
+
+Benchmark results...
