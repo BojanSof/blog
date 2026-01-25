@@ -420,10 +420,73 @@ We will measure:
 - wire size,
 - memory usage (code and RAM).
 
-[STM32F411CE](https://www.st.com/en/microcontrollers-microprocessors/stm32f411.html) MCU board will be used, which has Cortex-M4 core with floating-point unit, running at 100 MHz max clock frequency, 128 kB of SRAM and 512 kB of Flash.
+[STM32F411CE](https://www.st.com/en/microcontrollers-microprocessors/stm32f411.html) MCU [board](https://stm32-base.org/boards/STM32F411CEU6-WeAct-Black-Pill-V2.0.html) will be used, known as blackpill, which has Cortex-M4 core with floating-point unit, running at 100 MHz max clock frequency, 128 kB of SRAM and 512 kB of Flash.
 The code for the benchmark is available on [GitHub](LINK_TODO).
-We are going to use CMake to manage the project and the dependencies.
 
-More details about the benchmark...
+We are going to evaluate the performance of 4 serialization formats:
+- Custom binary encoding,
+- Protocol Buffers ([nanopb](https://github.com/nanopb/nanopb)),
+- [Flatbuffer](https://github.com/google/flatbuffers), and
+- CBOR ([zcbor](https://github.com/NordicSemiconductor/zcbor)).
 
-Benchmark results...
+The data in the benchmark come from imaginary AR maintenance glasses, battery-powered, which have IMU to track head orientation, eye-tracking cameras to track the gaze of the technician and outwards-facing camera, to capture image of what the technician is looking at.
+They send this data over WiFi.
+The head orientation is represented with [quaternion](https://en.wikipedia.org/wiki/Quaternion) (array of 4 values), the gaze is represented with 2D vector and the image sent by the device is in JPEG format.
+
+In the protocol, there are 3 kinds of payloads:
+- `StatusPayload`, containing generic device info: battery percentage, wifi RSSI and uptime in seconds,
+- `SensorPayload`, containing the sensor data, that is the head orientation and the gaze vector,
+- `ImagePayload`, containig the JPEG image.
+
+Beside the payload, each packet also contains `deviceID` and `timestamp` when the packet is sent.
+
+> Note that the code for the benchmark on GitHub is dirty and some parts are generated using AI coding agents.
+It serves merely for illustrative purpose and provides insights how to use the serialization libraries.
+{: .prompt-info }
+
+The benchmark consist of two tests: one to serialize/deserialize smaller sensor data payload, and another test with larger image payload.
+The MCU CPU is configured to run at 84 MHz clock frequency.
+The cycle counter in the Cortex-M4 core is used to measure the execution time of the code.
+The code is built with `-O0 Og` flags.
+
+The results of the benchmark are given in the tables below.
+
+### Small data benchmark
+
+#### Serialization
+
+| Protocol                  | Packet size (bytes) | Avg cycles | Avg time (us) |
+| :------------------------ | ------------------: | ---------: | ------------: |
+| Custom binary encoding    | 43                  | 2832       | 33.714        |
+| Protocol buffers (nanopb) | 18                  | 16606      | 197.690       |
+| FlatBuffers               | 88                  | 16163      | 192.416       |
+| CBOR (zcbor)              | 72                  | 6150       | 73.214        |
+
+#### Deserialization 
+
+| Protocol                  | Avg cycles | Avg time (us) |
+| :------------------------ | ---------: | ------------: |
+| Custom binary encoding    | 2515       | 29.940        |
+| Protocol buffers (nanopb) | 14989      | 178.440       |
+| FlatBuffers               | 8752       | 104.190       |
+| CBOR (zcbor)              | 15012      | 178.714       |
+
+### Large data benchmark
+
+#### Serialization
+
+| Protocol                  | Packet size (bytes) | Avg cycles | Avg time (us) |
+| :------------------------ | ------------------: | ---------: | ------------: |
+| Custom binary encoding    | 7498                | 48270      | 574.642       |
+| Protocol buffers (nanopb) | 7503                | 63246      | 752.928       |
+| FlatBuffers               | 7544                | 98630      | 1174.166      |
+| CBOR (zcbor)              | 7499                | 57027      | 678.892       |
+
+#### Deserialization 
+
+| Protocol                  | Avg cycles | Avg time (us) |
+| :------------------------ | ---------: | ------------: |
+| Custom binary encoding    | 1775       | 21.130        |
+| Protocol buffers (nanopb) | 15445      | 183.869       |
+| FlatBuffers               | 9018       | 107.357       |
+| CBOR (zcbor)              | 10306      | 122.690       |
