@@ -490,3 +490,42 @@ The results of the benchmark are given in the tables below.
 | Protocol buffers (nanopb) | 15445      | 183.869       |
 | FlatBuffers               | 9018       | 107.357       |
 | CBOR (zcbor)              | 10306      | 122.690       |
+
+### Discussion on the results
+
+There are few insights that we can take even from these simple benchmarks.
+
+In case of smaller data payloads, we are often interested in two things.
+The time to perform the serialization and deserialization is one thing that we want to be low, highlighting the CPU cost of the format.
+The other thing is the protocol overhead (headers, metadata, etc.), which we also want to be as low as possible.
+
+In case of larger data payloads, often the size of the actual payload is much greater compared to the protocol overhead, so we can simply ignore it in most of the times.
+However, we want the serialization/deserialization time to be low, so we can achieve high throughput, ideally greater or equal to the used underlying transport.
+The throughput can be calculated from the data by simply diving the packet size and the time needed for serialization and deserialization.
+
+The plots below show the discussed points.
+
+![Benchmark results plots](/assets/img/mbedcom/benchmark-results-light.svg){: .light}
+![Benchmark results plots](/assets/img/mbedcom/benchmark-results-dark.svg){: .dark}
+_Plots for the benchmark results_
+
+For the small data payload, we can see that Custom Binary Encoding has the smallest latency for serialization and deserialization, which is expected, as it performs simple memory copy operations and adds minimal header during serialization, while for the deserialization it does zero parsing.
+Protocol buffers on the other hand provide smallest serialized data size, simply because the use Varint encoding, which strips the zeros and compresses some of the integers.
+The protocol buffers size is dependent on the content, but for sensor data that can have a lot of zeros or small values, it would often beat custom binary encoding, which would use the whole integer width.
+The FlatBuffers size is worst in this case, as the format adds a lot of overhead, including vtables, offsets and alignment padding.
+The serialization is slow, but the deserialization is good, second after custom binary encoding, which is expected, as that is the main feature of FlatBuffers.
+Finally, CBOR serialization speed is good enough, the serialized stream size is larger than custom binary encoding and protobuf due to added type tags for each field.
+CBOR can be considered as middleground.
+
+For the larger data payload, custom binary encoding is winner, especially in deserialization, as it can be implemented simply by creating pointer on the memory of the receiving buffer.
+The serialization throughput for custom binary encoding in this case is implemented by copying the input data in a transmission buffer.
+FlatBuffers provide second best deserialization throughput, which is expected, but the serialization throughput is lower compared to the other protocols due to how the library handles the memory.
+
+## Conclusion
+
+There are a lot of ways to create a protocol for data exchange on embedded devices.
+We covered some of the most famous serialization protocols and framing protocols, looking into their strengths and weaknesses.
+Custom binary encoding can be the most optimal one in case where the data is already defined and there is no need for big flexibility in the communication protocol.
+If flexibility is needed, protocol buffers are great way of sacrificing additional CPU cycles to achieve it, while also providing some size compression.
+When there is a need to read large data without parsing, flatbuffers are the best choice.
+Finally, use CBOR when standard, lighter and more-compact self-describing format is needed compared to JSON, but don't want to end up handling schema setups, like the ones used in flatbuffers and protocol buffers.
