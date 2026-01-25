@@ -441,10 +441,9 @@ Beside the payload, each packet also contains `deviceID` and `timestamp` when th
 It serves merely for illustrative purpose and provides insights how to use the serialization libraries.
 {: .prompt-info }
 
-The benchmark consist of two tests: one to serialize/deserialize smaller sensor data payload, and another test with larger image payload.
-The MCU CPU is configured to run at 84 MHz clock frequency.
-The cycle counter in the Cortex-M4 core is used to measure the execution time of the code.
-The code is built with `-O0 Og` flags.
+The benchmark consists of two tests: one for serializing/deserializing a smaller sensor payload and another for a larger image payload.
+The MCU runs at 84 MHz.
+The Cortex-M4 cycle counter measures execution time, and builds used `-O0`/`-Og` for instrumentation.
 
 The results of the benchmark are given in the tables below.
 
@@ -498,7 +497,7 @@ The other thing is the protocol overhead (headers, metadata, etc.), which we als
 
 In case of larger data payloads, often the size of the actual payload is much greater compared to the protocol overhead, so we can simply ignore it in most of the times.
 However, we want the serialization/deserialization time to be low, so we can achieve high throughput, ideally greater or equal to the used underlying transport.
-The throughput can be calculated from the data by simply diving the packet size and the time needed for serialization and deserialization.
+Throughput can be calculated by dividing the packet size by the serialization or deserialization time.
 
 The plots below show the discussed points.
 
@@ -512,7 +511,7 @@ The protocol buffers size is dependent on the content, but for sensor data that 
 The FlatBuffers size is worst in this case, as the format adds a lot of overhead, including vtables, offsets and alignment padding.
 The serialization is slow, but the deserialization is good, second after custom binary encoding, which is expected, as that is the main feature of FlatBuffers.
 Finally, CBOR serialization speed is good enough, the serialized stream size is larger than custom binary encoding and protobuf due to added type tags for each field.
-CBOR can be considered as middleground.
+CBOR can be considered a middle ground.
 
 For the larger data payload, custom binary encoding is winner, especially in deserialization, as it can be implemented simply by creating pointer on the memory of the receiving buffer.
 The serialization throughput for custom binary encoding in this case is implemented by copying the input data in a transmission buffer.
