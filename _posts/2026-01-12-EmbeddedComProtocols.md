@@ -15,7 +15,7 @@ The goal of this blog post is to mainly cover the last point - how to structure 
 ## Communication protocol stack
 
 The communication protocols can be modelled with stack with multiple layers, very similar to how [TCP/IP](https://en.wikipedia.org/wiki/Internet_protocol_suite#Key_architectural_principles) and [BLE](https://www.bluetooth.com/bluetooth-le-primer/#mcetoc_1iiprfme58) protocol stacks are defined.
-We will use the term *message* to describe the payload that is exchanged in the communcation.
+We will use the term *message* to describe the payload that is exchanged in the communication.
 
 - Application Layer
 - Presentation Layer
@@ -55,8 +55,8 @@ We can use quite simple format in which we will represent the temperature using 
 51 = 0x33
 ```
 
-Now although in this trivial case each message is of fixed length and we probably can go without framing, but for the sake of completness we will provide a way to frame the data, so we can find the start and end of each message.
-In the framing layer in this example, we can use [COBS (Consistent Overhead Byte Stuffing)](https://en.wikipedia.org/wiki/Consistent_Overhead_Byte_Stuffing), which we will cover in more details later, but esentially what COBS does is replacing the zeros in the payload with non-zero values representing the distance to the next zero or the end of the packet, also denoted with zero:
+Although in this trivial case each message is fixed length and framing may not be necessary, for completeness we'll show framing so receivers can find message boundaries.
+In the framing layer for this example we can use [COBS (Consistent Overhead Byte Stuffing)](https://en.wikipedia.org/wiki/Consistent_Overhead_Byte_Stuffing). Essentially, COBS replaces zero bytes in the payload with non-zero markers that indicate the distance to the next zero or to the end of the packet:
 ```
 [0x01, 0x01, 0x04, 0xc4, 0x41, 0x33, 0x00]
 ```
@@ -106,7 +106,7 @@ We will cover some of the most used machine optimized serialization formats next
 
 One of the most common form of serialization is to perform custom binary packing of the fields.
 This approach is the most compact form of serialization, in which the developer has total control of how the bytes are used.
-Basically, the developer sets the endianess of the data, how many bytes each field occupies and defines in which order the high-level data fields are serialized.
+Basically, the developer sets the endianness of the data, how many bytes each field occupies, and the order in which fields are serialized.
 We need to know all of these things to deserialize the data.
 
 ```c
@@ -331,8 +331,8 @@ If the underlying transport is reliable (like TCP/IP, USB, BLE), the sync bytes 
 
 ### COBS (Consistent Overhead Byte Stuffing)
 
-[COBS (Consistent Overhead Byte Stuffin)](https://en.wikipedia.org/wiki/Consistent_Overhead_Byte_Stuffing) is framing algorithm, typically used with UART, with goal of using specific byte value, typically zero (0x00) as a reliable packet delimiter, ensuring that the data itself never contains the delimiter.
-COBS guarantees that the added overhead is small and predictable (consistent).
+[COBS (Consistent Overhead Byte Stuffing)](https://en.wikipedia.org/wiki/Consistent_Overhead_Byte_Stuffing) is a framing algorithm often used over UART. Its goal is to make a specific byte value (commonly 0x00) a reliable packet delimiter by ensuring the payload never contains that delimiter.
+COBS guarantees a small, predictable overhead.
 
 COBS works such that it removes every delimiter appearance, let's say 0x00, from the serialized data and replaces it with a number that tells the receiver where the next 0x00 was located.
 As all the delimiter bytes are removed from the data, it is safe to add the delimiter at the end of the byte stream to mark the packet boundary.
@@ -380,9 +380,9 @@ SLIP is also very robust and self-synchronizing and SLIP decoder is very simple 
 
 ### Which framing protocol to choose?
 
-The choice of framing protocol depends on the underlying transport protocol, as transport protocols differ in terms of realiability and the way of sending the data through the medium.
+The choice of framing protocol depends on the underlying transport: transports differ in reliability, ordering, and fragmentation behaviour.
 
-Protocols like UART and RS-232 are unreliable, so Sync-Lenght, COBS and SLIP can be used, COBS and SLIP are usually preferred for framing.
+Transports like UART and RS-232 are unreliable, so Sync-Length, COBS, and SLIP are common choices; COBS and SLIP are often preferred.
 On the other hand, when using USB CDC (Virtual Serial), which utilizes USB bulk transfers, is reliable as there is error correction and retransmission by the transport itself, so it is okay to use Length-Prefix framing in this case.
 
 SPI and I2C transports are master-slave synchronous transports, in which the master needs to know how many clock cycles to generate for the data exchange.
@@ -405,11 +405,8 @@ Note that this is *application-level unreliability* of notifications, not *link-
 The link-layer in BLE is reliable and it ensures that the data is received in order, without errors.
 {: .prompt-info }
 
-It is worth noting that altough some framing protocol may add only overhead with the chosen underlying transport, it is often beneficial for the framing protocl to add few more bytes as overhead.
-There are few reasons for this including transport-agnostic protocols and debuggability.
-For example, we see that Length-Prefix framing can be used with many underlying transports, making Sync-Length redundant.
-Still, by using Sync-Length protocol we make it possible to use variety of transports now or in the future.
-Also, we are able to debug issues more easily as the sync byte can typically be human-readable making easy to know where message starts in a hex dump.
+It is worth noting that although framing adds overhead, adding a few extra header bytes can be beneficial for transport-agnosticism and debuggability.
+For example, Length-Prefix framing works over many transports, but Sync-Length headers can make debugging easier by including recognizable sync bytes.
 
 ## Benchmarks
 
@@ -421,7 +418,7 @@ We will measure:
 - memory usage (code and RAM).
 
 [STM32F411CE](https://www.st.com/en/microcontrollers-microprocessors/stm32f411.html) MCU [board](https://stm32-base.org/boards/STM32F411CEU6-WeAct-Black-Pill-V2.0.html) will be used, known as blackpill, which has Cortex-M4 core with floating-point unit, running at 100 MHz max clock frequency, 128 kB of SRAM and 512 kB of Flash.
-The code for the benchmark is available on [GitHub](LINK_TODO).
+The code for the benchmark is available on [GitHub](https://github.com/BojanSof/embedded-serialization-formats-benchmarks).
 
 We are going to evaluate the performance of 4 serialization formats:
 - Custom binary encoding,
@@ -436,7 +433,7 @@ The head orientation is represented with [quaternion](https://en.wikipedia.org/w
 In the protocol, there are 3 kinds of payloads:
 - `StatusPayload`, containing generic device info: battery percentage, wifi RSSI and uptime in seconds,
 - `SensorPayload`, containing the sensor data, that is the head orientation and the gaze vector,
-- `ImagePayload`, containig the JPEG image.
+- `ImagePayload`, containing the JPEG image.
 
 Beside the payload, each packet also contains `deviceID` and `timestamp` when the packet is sent.
 
