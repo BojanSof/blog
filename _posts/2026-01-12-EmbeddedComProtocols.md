@@ -23,10 +23,6 @@ We will use the term *message* to describe the payload that is exchanged in the 
 - Data Link Layer
 - Physical layer
 
-![Communication protocol stack](/assets/img/mbedcom/stack.svg){: .light}
-![Communication protocol stack](/assets/img/mbedcom/stack-dark.svg){: .dark}
-_Communication protocol stack_
-
 We will describe the layers going from the top to the bottom.
 On top of the stack is the **Application Layer** which represents the business logic, represented by high-level abstract objects.
 Below it is the **Presentation Layer**, which handles the serialization of the data, by converting the high-level abstract objects into a raw byte array.
