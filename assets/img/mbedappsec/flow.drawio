@@ -1,0 +1,426 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Page-1" id="HuZwLdcgAGU2bvE-RX3O">
+    <mxGraphModel dx="534" dy="281" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="vTWKECJPknn-pvVOLBbK-11" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=light-dark(#005073,#000000);strokeColor=none;fontColor=#FFFFFF;" value="&lt;span style=&quot;font-size: 18px; font-weight: 700;&quot;&gt;Embedded Device&lt;/span&gt;" vertex="1">
+          <mxGeometry height="50" width="280" x="500" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-12" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#A50040;strokeColor=none;fontColor=#FFFFFF;" value="&lt;span style=&quot;font-size: 18px; font-weight: 700;&quot;&gt;Client Application&lt;/span&gt;" vertex="1">
+          <mxGeometry height="50" width="280" x="1100" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-14" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="" vertex="1">
+          <mxGeometry height="100" width="340" x="440" y="215" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-13" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1ba1e2;fontColor=#ffffff;strokeColor=#006EAF;" value="&lt;span style=&quot;font-size: 18px;&quot;&gt;Phase 1:&lt;/span&gt;&lt;br style=&quot;font-size: 18px;&quot;&gt;&lt;b style=&quot;font-size: 18px;&quot;&gt;Provisioning &amp;amp; Deployment&lt;/b&gt;&lt;div&gt;&lt;span style=&quot;font-size: 18px;&quot;&gt;(Preparation Phase)&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="100" width="230" x="230" y="215" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-15" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="" vertex="1">
+          <mxGeometry height="100" width="320" x="1060" y="215" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-16" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="" vertex="1">
+          <mxGeometry height="120" width="340" x="440" y="335" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-17" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0a30a;fontColor=#FFFFFF;strokeColor=#BD7000;" value="&lt;span style=&quot;font-size: 18px;&quot;&gt;Phase 2:&lt;/span&gt;&lt;br style=&quot;font-size: 18px;&quot;&gt;&lt;b style=&quot;font-size: 18px;&quot;&gt;Connection &amp;amp;&amp;nbsp; Ephemeral Key Exchange&lt;/b&gt;&lt;div&gt;&lt;span style=&quot;font-size: 18px;&quot;&gt;(Handshake Phase)&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="120" width="230" x="230" y="335" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-18" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="" vertex="1">
+          <mxGeometry height="120" width="320" x="1060" y="335" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-24" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="" vertex="1">
+          <mxGeometry height="120" width="340" x="440" y="475" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-25" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6d8764;fontColor=#ffffff;strokeColor=#3A5431;" value="&lt;span style=&quot;font-size: 18px;&quot;&gt;Phase 3:&lt;/span&gt;&lt;br style=&quot;font-size: 18px;&quot;&gt;&lt;b style=&quot;font-size: 18px;&quot;&gt;Mutual Authentication&lt;/b&gt;&lt;div&gt;&lt;span style=&quot;font-size: 18px;&quot;&gt;(Trust Phase)&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="120" width="230" x="230" y="475" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-26" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="" vertex="1">
+          <mxGeometry height="120" width="320" x="1060" y="475" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-162" edge="1" parent="1" source="vTWKECJPknn-pvVOLBbK-27" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=none;endFill=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="800" y="685" />
+            </Array>
+            <mxPoint x="820" y="685.5" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-27" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="" vertex="1">
+          <mxGeometry height="120" width="340" x="440" y="615" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-28" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e51400;fontColor=#ffffff;strokeColor=#B20000;" value="&lt;span style=&quot;font-size: 18px;&quot;&gt;Phase 4:&lt;/span&gt;&lt;br style=&quot;font-size: 18px;&quot;&gt;&lt;b style=&quot;font-size: 18px;&quot;&gt;Session Key Derivation &amp;amp; Data Encryption&lt;/b&gt;&lt;div&gt;&lt;span style=&quot;font-size: 18px;&quot;&gt;(Operational Phase)&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="120" width="230" x="230" y="615" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-29" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="" vertex="1">
+          <mxGeometry height="120" width="320" x="1060" y="615" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-30" parent="1" style="pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=#006EAF;fillColor=light-dark(#005073,#000000);labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;align=center;outlineConnect=0;shape=mxgraph.veeam.cpu;fontColor=#ffffff;" value="" vertex="1">
+          <mxGeometry height="60" width="60" x="425" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-33" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontSize=16;" value="Device Private Key (&lt;i&gt;d&lt;/i&gt;&lt;sub&gt;s&lt;/sub&gt;)" vertex="1">
+          <mxGeometry height="30" width="190" x="560" y="225" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-34" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontSize=16;" value="Device Public Key (&lt;i&gt;Q&lt;/i&gt;&lt;sub&gt;s&lt;/sub&gt;) &amp;amp; Cert" vertex="1">
+          <mxGeometry height="30" width="220" x="560" y="255" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-35" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontSize=16;" value="CA Public Key (Trust Anchor)" vertex="1">
+          <mxGeometry height="30" width="210" x="560" y="285" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-36" parent="1" style="verticalLabelPosition=bottom;html=1;verticalAlign=top;align=center;strokeColor=#A50040;fillColor=#A50040;shape=mxgraph.azure.mobile;pointerEvents=1;fontColor=#ffffff;" value="" vertex="1">
+          <mxGeometry height="50" width="30" x="1060" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-38" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontSize=16;" value="App Private Key (&lt;i&gt;d&lt;/i&gt;&lt;sub&gt;A&lt;/sub&gt;)" vertex="1">
+          <mxGeometry height="30" width="190" x="1160" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-39" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontSize=16;" value="App Public Key (&lt;i&gt;Q&lt;/i&gt;&lt;sub&gt;A&lt;/sub&gt;) &amp;amp; Cert" vertex="1">
+          <mxGeometry height="30" width="220" x="1160" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-40" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontSize=16;" value="CA Public Key (Trust Anchor)" vertex="1">
+          <mxGeometry height="30" width="210" x="1160" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-42" parent="1" style="shape=image;editableCssRules=.*;verticalLabelPosition=bottom;labelBackgroundColor=default;verticalAlign=top;aspect=fixed;imageAspect=0;image=data:image/svg+xml,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9Ii0wLjUgLTAuNSAyOCAyOCIgaGVpZ2h0PSIyOCIgd2lkdGg9IjI4Ij4mI3hhOwkgIDxzdHlsZSB0eXBlPSJ0ZXh0L2NzcyI+LnN0MCB7IHN0b3AtY29sb3I6IHJnYig5MSwgMTE1LCAxMzkpOyB9IC5zdDEgeyBzdG9wLWNvbG9yOiByZ2IoMzQsIDUzLCA3Mik7IH0gPC9zdHlsZT4mI3hhOwk8ZGVmcz4mI3hhOwkJPGxpbmVhckdyYWRpZW50IGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB5Mj0iMjUuMzA5IiB4Mj0iMjMuNDU0IiB5MT0iMy40NzQiIHgxPSIyLjAzOSIgaWQ9IkEiPiYjeGE7CQkJPHN0b3AgY2xhc3M9InN0MCIvPiYjeGE7CQkJPHN0b3AgY2xhc3M9InN0MSIgb2Zmc2V0PSIxIi8+JiN4YTsJCTwvbGluZWFyR3JhZGllbnQ+JiN4YTsJPC9kZWZzPiYjeGE7CTxwYXRoIGZpbGw9InVybCgjQSkiIGQ9Ik0yNi45OTYgMTIuNDIybC02LjY1LTUuNTE2YTEuNCAxLjQgMCAwIDAtMS40ODQtLjE5NmMtLjQ5LjIyNC0uNzk4LjcyOC0uNzk4IDEuMjc0djIuNTM0TDEzLjcxIDYuOTA2YTEuNCAxLjQgMCAwIDAtMS40ODQtLjE5NmMtLjQ5LjIyNC0uNzk4LjcyOC0uNzk4IDEuMjc0VjEyLjFIOC41ODZWLjljMC0uNzctLjYzLTEuNC0xLjQtMS40SC45Qy4xMy0uNS0uNS4xMy0uNS45djI1LjJjMCAuNzcuNjMgMS40IDEuNCAxLjRoMjUuMmMuNzcgMCAxLjQtLjYzIDEuNC0xLjRWMTMuNWExLjM5IDEuMzkgMCAwIDAtLjUwNC0xLjA3OHpNNS43NTggMjQuN0gyLjN2LTMuNWgzLjQ1OHptMC02LjNIMi4zdi0zLjVoMy40NTh6bTAtNi4zSDIuM1Y4LjgyNGgzLjQ1OHptMC02LjA3NkgyLjNWMi4zaDMuNDU4ek0yNC42ODYgMjQuN0g4LjU1OHYtMy41aDEuODQ4Yy43NyAwIDEuNC0uNjMgMS40LTEuNHMtLjYzLTEuNC0xLjQtMS40SDguNTU4di0zLjVIMTIuOGMuNzcgMCAxLjQtLjYzIDEuNC0xLjR2LTIuNTM0bDQuMzU0IDMuNjEyYTEuNCAxLjQgMCAwIDAgMS40ODQuMTk2Yy40OS0uMjI0Ljc5OC0uNzI4Ljc5OC0xLjI3NHYtMi41MzRsMy44NSAzLjE5MnptLTkuMzY2LTMuMTVhMS43NSAxLjc1IDAgMSAwIDAtMy41IDEuNzUgMS43NSAwIDEgMCAwIDMuNXptNi45My0xLjc1YTEuNzUgMS43NSAwIDEgMS0zLjUgMCAxLjc1IDEuNzUgMCAxIDEgMy41IDB6IiBmaWxsLXJ1bGU9ImV2ZW5vZGQiLz4mI3hhOzwvc3ZnPg==;" value="" vertex="1">
+          <mxGeometry height="38" width="38" x="742" y="208.25" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-44" parent="1" style="points=[[0.015,0.015,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[0.985,0.015,0],[1,0.22,0],[1,0.44,0],[1,0.67,0],[0.985,0.89,0],[0,0.22,0],[0,0.44,0],[0,0.67,0],[0.015,0.89,0],[0.25,0.91,0],[0.5,0.91,0],[0.785,0.955,0]];verticalLabelPosition=bottom;sketch=0;html=1;verticalAlign=top;aspect=fixed;align=center;pointerEvents=1;shape=mxgraph.cisco19.x509_certificate2;fillColor=#FAFAFA;strokeColor=#005073;" value="" vertex="1">
+          <mxGeometry height="47.5" width="50" x="470" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-45" parent="1" style="points=[[0.015,0.015,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[0.985,0.015,0],[1,0.22,0],[1,0.44,0],[1,0.67,0],[0.985,0.89,0],[0,0.22,0],[0,0.44,0],[0,0.67,0],[0.015,0.89,0],[0.25,0.91,0],[0.5,0.91,0],[0.785,0.955,0]];verticalLabelPosition=bottom;sketch=0;html=1;verticalAlign=top;aspect=fixed;align=center;pointerEvents=1;shape=mxgraph.cisco19.x509_certificate2;fillColor=#FAFAFA;strokeColor=#A50040;" value="" vertex="1">
+          <mxGeometry height="47.5" width="50" x="1070" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-52" edge="1" parent="1" source="vTWKECJPknn-pvVOLBbK-16" style="endArrow=classic;startArrow=classic;html=1;rounded=0;entryX=-0.002;entryY=0.101;entryDx=0;entryDy=0;exitX=0.998;exitY=0.102;exitDx=0;exitDy=0;exitPerimeter=0;entryPerimeter=0;" target="vTWKECJPknn-pvVOLBbK-18" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="870" y="365" as="sourcePoint" />
+            <mxPoint x="920" y="315" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-53" connectable="0" parent="vTWKECJPknn-pvVOLBbK-52" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=13;fontStyle=1;labelBackgroundColor=none;" value="&amp;nbsp;Connection&amp;nbsp;" vertex="1">
+          <mxGeometry relative="1" x="-0.2845" as="geometry">
+            <mxPoint x="33" y="-10" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-57" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontSize=16;" value="Ephemeral Key Generation" vertex="1">
+          <mxGeometry height="30" width="210" x="560" y="355.75" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-58" parent="1" style="points=[[0.015,0.015,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[0.985,0.015,0],[1,0.22,0],[1,0.44,0],[1,0.67,0],[0.985,0.89,0],[0,0.22,0],[0,0.44,0],[0,0.67,0],[0.015,0.89,0],[0.25,0.91,0],[0.5,0.91,0],[0.785,0.955,0]];verticalLabelPosition=bottom;sketch=0;html=1;verticalAlign=top;aspect=fixed;align=center;pointerEvents=1;shape=mxgraph.cisco19.x509_certificate2;fillColor=#FAFAFA;strokeColor=#FFD966;" value="" vertex="1">
+          <mxGeometry height="47.5" width="50" x="470" y="267.5" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-60" parent="1" style="points=[[0.015,0.015,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[0.985,0.015,0],[1,0.22,0],[1,0.44,0],[1,0.67,0],[0.985,0.89,0],[0,0.22,0],[0,0.44,0],[0,0.67,0],[0.015,0.89,0],[0.25,0.91,0],[0.5,0.91,0],[0.785,0.955,0]];verticalLabelPosition=bottom;sketch=0;html=1;verticalAlign=top;aspect=fixed;align=center;pointerEvents=1;shape=mxgraph.cisco19.x509_certificate2;fillColor=#FAFAFA;strokeColor=#FFD966;" value="" vertex="1">
+          <mxGeometry height="47.5" width="50" x="1070" y="267.5" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-61" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontSize=16;" value="Ephemeral Key Generation" vertex="1">
+          <mxGeometry height="30" width="210" x="1160" y="355" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-62" parent="1" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;outlineConnect=0;align=center;shape=mxgraph.office.security.key_permissions;fillColor=#005073;" value="" vertex="1">
+          <mxGeometry height="53" width="25" x="525" y="243.5" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-64" parent="1" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;outlineConnect=0;align=center;shape=mxgraph.office.security.key_permissions;fillColor=#A50040;" value="" vertex="1">
+          <mxGeometry height="53" width="25" x="1125" y="238.5" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-69" connectable="0" parent="1" style="group;fillColor=light-dark(#005073,#000000);" value="" vertex="1">
+          <mxGeometry height="24.5" width="83.88000000000005" x="466.12" y="375.5" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-67" parent="vTWKECJPknn-pvVOLBbK-69" style="points=[[0,0.5,0],[0.24,0,0],[0.5,0.28,0],[0.995,0.475,0],[0.5,0.72,0],[0.24,1,0]];verticalLabelPosition=bottom;sketch=0;html=1;verticalAlign=top;aspect=fixed;align=center;pointerEvents=1;shape=mxgraph.cisco19.key2;fillColor=#A50040;strokeColor=#67AB9F;fontColor=#ffffff;rotation=90;fillStyle=solid;" value="" vertex="1">
+          <mxGeometry height="24.5" width="54.44" x="29.440000000000055" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-68" parent="vTWKECJPknn-pvVOLBbK-69" style="points=[[0,0.5,0],[0.24,0,0],[0.5,0.28,0],[0.995,0.475,0],[0.5,0.72,0],[0.24,1,0]];verticalLabelPosition=bottom;sketch=0;html=1;verticalAlign=top;aspect=fixed;align=center;pointerEvents=1;shape=mxgraph.cisco19.key2;fillColor=#A50040;strokeColor=#EA6B66;fontColor=#ffffff;rotation=90;fillStyle=solid;" value="" vertex="1">
+          <mxGeometry height="24.5" width="54.44" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-71" connectable="0" parent="1" style="group;fillColor=#A50040;" value="" vertex="1">
+          <mxGeometry height="24.5" width="83.88000000000011" x="1066.12" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-50" parent="vTWKECJPknn-pvVOLBbK-71" style="points=[[0,0.5,0],[0.24,0,0],[0.5,0.28,0],[0.995,0.475,0],[0.5,0.72,0],[0.24,1,0]];verticalLabelPosition=bottom;sketch=0;html=1;verticalAlign=top;aspect=fixed;align=center;pointerEvents=1;shape=mxgraph.cisco19.key2;fillColor=none;strokeColor=#67AB9F;fontColor=#ffffff;rotation=90;" value="" vertex="1">
+          <mxGeometry height="24.5" width="54.44" x="29.440000000000055" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-51" parent="vTWKECJPknn-pvVOLBbK-71" style="points=[[0,0.5,0],[0.24,0,0],[0.5,0.28,0],[0.995,0.475,0],[0.5,0.72,0],[0.24,1,0]];verticalLabelPosition=bottom;sketch=0;html=1;verticalAlign=top;aspect=fixed;align=center;pointerEvents=1;shape=mxgraph.cisco19.key2;fillColor=none;strokeColor=#EA6B66;fontColor=#ffffff;rotation=90;" value="" vertex="1">
+          <mxGeometry height="24.5" width="54.44" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-73" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="780" y="371" as="sourcePoint" />
+            <mxPoint x="1060" y="371" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-74" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;exitX=0;exitY=0.75;exitDx=0;exitDy=0;entryX=1;entryY=0.75;entryDx=0;entryDy=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="1060" y="396" as="sourcePoint" />
+            <mxPoint x="780" y="396" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-80" parent="1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=none;fillColor=light-dark(#005073,#000000);" value="" vertex="1">
+          <mxGeometry height="20" width="20" x="959.59" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-77" parent="1" style="points=[[0,0.5,0],[0.24,0,0],[0.5,0.28,0],[0.995,0.475,0],[0.5,0.72,0],[0.24,1,0]];verticalLabelPosition=bottom;sketch=0;html=1;verticalAlign=top;aspect=fixed;align=center;pointerEvents=1;shape=mxgraph.cisco19.key2;fillColor=#A50040;strokeColor=#67AB9F;fontColor=#ffffff;rotation=90;" value="" vertex="1">
+          <mxGeometry height="20" width="44.44" x="955.15" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-81" parent="1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=none;fillColor=light-dark(#A50040,#000000);direction=south;" value="" vertex="1">
+          <mxGeometry height="20" width="20" x="841.44" y="386.5" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-82" parent="1" style="points=[[0,0.5,0],[0.24,0,0],[0.5,0.28,0],[0.995,0.475,0],[0.5,0.72,0],[0.24,1,0]];verticalLabelPosition=bottom;sketch=0;html=1;verticalAlign=top;aspect=fixed;align=center;pointerEvents=1;shape=mxgraph.cisco19.key2;fillColor=#A50040;strokeColor=#67AB9F;fontColor=#ffffff;rotation=90;" value="" vertex="1">
+          <mxGeometry height="20" width="44.44" x="837" y="386.5" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-83" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#BD7000;fillColor=#f0a30a;fontColor=#000000;fontStyle=1" value="ECDH" vertex="1">
+          <mxGeometry height="30" width="65" x="880.15" y="358.75" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-85" edge="1" parent="1" source="vTWKECJPknn-pvVOLBbK-16" style="shape=flexArrow;endArrow=classic;startArrow=classic;html=1;rounded=0;entryX=0;entryY=0.911;entryDx=0;entryDy=0;entryPerimeter=0;exitX=0.997;exitY=0.901;exitDx=0;exitDy=0;exitPerimeter=0;fillColor=#e3c800;strokeColor=#B09500;width=18;endSize=7;" target="vTWKECJPknn-pvVOLBbK-18" value="">
+          <mxGeometry height="100" relative="1" width="100" as="geometry">
+            <mxPoint x="830" y="525" as="sourcePoint" />
+            <mxPoint x="930" y="425" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-87" connectable="0" parent="vTWKECJPknn-pvVOLBbK-85" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=none;fontStyle=1" value="Temporary Encrypted Channel" vertex="1">
+          <mxGeometry relative="1" x="0.1776" y="-1" as="geometry">
+            <mxPoint x="-22" y="-1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-86" connectable="0" parent="1" style="group" value="" vertex="1">
+          <mxGeometry height="28.799999999999955" width="103.48000000000002" x="861.44" y="296.5" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-54" parent="vTWKECJPknn-pvVOLBbK-86" style="html=1;verticalLabelPosition=bottom;align=center;labelBackgroundColor=#ffffff;verticalAlign=top;strokeWidth=2;strokeColor=#0080F0;shadow=0;dashed=0;shape=mxgraph.ios7.icons.bluetooth;pointerEvents=1" value="" vertex="1">
+          <mxGeometry height="28.799999999999997" width="15" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-55" parent="vTWKECJPknn-pvVOLBbK-86" style="html=1;verticalLabelPosition=bottom;align=center;labelBackgroundColor=#ffffff;verticalAlign=top;strokeWidth=2;strokeColor=#0080F0;shadow=0;dashed=0;shape=mxgraph.ios7.icons.wifi;pointerEvents=1" value="" vertex="1">
+          <mxGeometry height="21" width="29.7" x="25.149999999999977" y="3.8999999999999773" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-56" parent="vTWKECJPknn-pvVOLBbK-86" style="sketch=0;aspect=fixed;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;align=center;fillColor=#0080F0;shape=mxgraph.mscae.enterprise.usb" value="" vertex="1">
+          <mxGeometry height="20" width="43.48" x="60" y="3.8999999999999773" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-88" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="780" y="495" as="sourcePoint" />
+            <mxPoint x="1060" y="495" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-89" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;exitX=0;exitY=0.75;exitDx=0;exitDy=0;entryX=1;entryY=0.75;entryDx=0;entryDy=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="1060" y="511" as="sourcePoint" />
+            <mxPoint x="780" y="511" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-90" parent="1" style="points=[[0.015,0.015,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[0.985,0.015,0],[1,0.22,0],[1,0.44,0],[1,0.67,0],[0.985,0.89,0],[0,0.22,0],[0,0.44,0],[0,0.67,0],[0.015,0.89,0],[0.25,0.91,0],[0.5,0.91,0],[0.785,0.955,0]];verticalLabelPosition=bottom;sketch=0;html=1;verticalAlign=top;aspect=fixed;align=center;pointerEvents=1;shape=mxgraph.cisco19.x509_certificate2;fillColor=#FAFAFA;strokeColor=#005073;" value="" vertex="1">
+          <mxGeometry height="30" width="31.58" x="953.8" y="482" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-91" parent="1" style="points=[[0.015,0.015,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[0.985,0.015,0],[1,0.22,0],[1,0.44,0],[1,0.67,0],[0.985,0.89,0],[0,0.22,0],[0,0.44,0],[0,0.67,0],[0.015,0.89,0],[0.25,0.91,0],[0.5,0.91,0],[0.785,0.955,0]];verticalLabelPosition=bottom;sketch=0;html=1;verticalAlign=top;aspect=fixed;align=center;pointerEvents=1;shape=mxgraph.cisco19.x509_certificate2;fillColor=#FAFAFA;strokeColor=#A50040;" value="" vertex="1">
+          <mxGeometry height="30" width="31.58" x="853.65" y="497" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-93" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontSize=16;" value="Temporary session key derivation" vertex="1">
+          <mxGeometry height="30" width="210" x="560" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-94" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontSize=16;" value="Temporary session key derivation" vertex="1">
+          <mxGeometry height="30" width="210" x="1160" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-95" parent="1" style="points=[[0.015,0.015,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[0.985,0.015,0],[1,0.22,0],[1,0.44,0],[1,0.67,0],[0.985,0.89,0],[0,0.22,0],[0,0.44,0],[0,0.67,0],[0.015,0.89,0],[0.25,0.91,0],[0.5,0.91,0],[0.785,0.955,0]];verticalLabelPosition=bottom;sketch=0;html=1;verticalAlign=top;aspect=fixed;align=center;pointerEvents=1;shape=mxgraph.cisco19.x509_certificate2;fillColor=#FAFAFA;strokeColor=#FFD966;" value="" vertex="1">
+          <mxGeometry height="36.5" width="38.42" x="470" y="478.5" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-100" parent="1" style="points=[[0.015,0.015,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[0.985,0.015,0],[1,0.22,0],[1,0.44,0],[1,0.67,0],[0.985,0.89,0],[0,0.22,0],[0,0.44,0],[0,0.67,0],[0.015,0.89,0],[0.25,0.91,0],[0.5,0.91,0],[0.785,0.955,0]];verticalLabelPosition=bottom;sketch=0;html=1;verticalAlign=top;aspect=fixed;align=center;pointerEvents=1;shape=mxgraph.cisco19.x509_certificate2;fillColor=#FAFAFA;strokeColor=#A50040;" value="" vertex="1">
+          <mxGeometry height="36.5" width="38.42" x="518.29" y="478.5" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-101" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontSize=16;" value="Verify certificate using&lt;br&gt;Trust Anchor" vertex="1">
+          <mxGeometry height="33" width="170" x="561" y="480.25" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-112" connectable="0" parent="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=13;fontStyle=1;labelBackgroundColor=none;" value="Exchange&lt;div&gt;certs&lt;/div&gt;" vertex="1">
+          <mxGeometry x="912.65" y="494.75" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-114" parent="1" style="whiteSpace=wrap;html=1;shape=mxgraph.basic.document" value="" vertex="1">
+          <mxGeometry height="30" width="22.5" x="477.96" y="516.75" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-115" parent="1" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;outlineConnect=0;align=center;shape=mxgraph.office.security.key_permissions;fillColor=#005073;" value="" vertex="1">
+          <mxGeometry height="27" width="12.74" x="472" y="518.25" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-116" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontSize=16;" value="Generate challenge" vertex="1">
+          <mxGeometry height="33" width="170" x="562" y="515.75" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-120" parent="1" style="whiteSpace=wrap;html=1;shape=mxgraph.basic.document;fillColor=light-dark(#005073,#000000);" value="" vertex="1">
+          <mxGeometry height="30" width="22.5" x="525" y="516.75" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-126" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="780" y="536.64" as="sourcePoint" />
+            <mxPoint x="1060" y="536.64" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-127" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;exitX=0;exitY=0.75;exitDx=0;exitDy=0;entryX=1;entryY=0.75;entryDx=0;entryDy=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="1060" y="552.64" as="sourcePoint" />
+            <mxPoint x="780" y="552.64" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-128" connectable="0" parent="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=13;fontStyle=1;labelBackgroundColor=none;" value="Challenges" vertex="1">
+          <mxGeometry x="912.65" y="545.25" as="geometry">
+            <mxPoint x="4" y="1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-129" parent="1" style="whiteSpace=wrap;html=1;shape=mxgraph.basic.document;fillColor=#A50040;" value="" vertex="1">
+          <mxGeometry height="22" width="16.5" x="861.44" y="543" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-130" parent="1" style="whiteSpace=wrap;html=1;shape=mxgraph.basic.document;fillColor=light-dark(#005073,#000000);" value="" vertex="1">
+          <mxGeometry height="22" width="16.5" x="959.59" y="525.25" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-132" parent="1" style="points=[[0.015,0.015,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[0.985,0.015,0],[1,0.22,0],[1,0.44,0],[1,0.67,0],[0.985,0.89,0],[0,0.22,0],[0,0.44,0],[0,0.67,0],[0.015,0.89,0],[0.25,0.91,0],[0.5,0.91,0],[0.785,0.955,0]];verticalLabelPosition=bottom;sketch=0;html=1;verticalAlign=top;aspect=fixed;align=center;pointerEvents=1;shape=mxgraph.cisco19.x509_certificate2;fillColor=#FAFAFA;strokeColor=#A50040;" value="" vertex="1">
+          <mxGeometry height="36.5" width="38.42" x="470" y="551.5" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-134" parent="1" style="whiteSpace=wrap;html=1;shape=mxgraph.basic.document;fillColor=light-dark(#A50040,#000000);" value="" vertex="1">
+          <mxGeometry height="30" width="22.5" x="525" y="554.75" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-135" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontSize=16;" value="Solve challenge" vertex="1">
+          <mxGeometry height="33" width="170" x="562" y="553.25" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-136" parent="1" style="points=[[0.015,0.015,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[0.985,0.015,0],[1,0.22,0],[1,0.44,0],[1,0.67,0],[0.985,0.89,0],[0,0.22,0],[0,0.44,0],[0,0.67,0],[0.015,0.89,0],[0.25,0.91,0],[0.5,0.91,0],[0.785,0.955,0]];verticalLabelPosition=bottom;sketch=0;html=1;verticalAlign=top;aspect=fixed;align=center;pointerEvents=1;shape=mxgraph.cisco19.x509_certificate2;fillColor=#FAFAFA;strokeColor=#FFD966;" value="" vertex="1">
+          <mxGeometry height="36.5" width="38.42" x="1080" y="480.25" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-137" parent="1" style="points=[[0.015,0.015,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[0.985,0.015,0],[1,0.22,0],[1,0.44,0],[1,0.67,0],[0.985,0.89,0],[0,0.22,0],[0,0.44,0],[0,0.67,0],[0.015,0.89,0],[0.25,0.91,0],[0.5,0.91,0],[0.785,0.955,0]];verticalLabelPosition=bottom;sketch=0;html=1;verticalAlign=top;aspect=fixed;align=center;pointerEvents=1;shape=mxgraph.cisco19.x509_certificate2;fillColor=#FAFAFA;strokeColor=light-dark(#005073,#000000);" value="" vertex="1">
+          <mxGeometry height="36.5" width="38.42" x="1128.29" y="480.25" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-138" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontSize=16;" value="Verify certificate using&lt;br&gt;Trust Anchor" vertex="1">
+          <mxGeometry height="33" width="170" x="1171" y="482" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-139" parent="1" style="whiteSpace=wrap;html=1;shape=mxgraph.basic.document" value="" vertex="1">
+          <mxGeometry height="30" width="22.5" x="1087.96" y="518.5" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-140" parent="1" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;outlineConnect=0;align=center;shape=mxgraph.office.security.key_permissions;fillColor=#A50040;" value="" vertex="1">
+          <mxGeometry height="27" width="12.74" x="1082" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-141" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontSize=16;" value="Generate challenge" vertex="1">
+          <mxGeometry height="33" width="170" x="1172" y="517.5" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-142" parent="1" style="whiteSpace=wrap;html=1;shape=mxgraph.basic.document;fillColor=#A50040;" value="" vertex="1">
+          <mxGeometry height="30" width="22.5" x="1135" y="518.5" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-143" parent="1" style="points=[[0.015,0.015,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[0.985,0.015,0],[1,0.22,0],[1,0.44,0],[1,0.67,0],[0.985,0.89,0],[0,0.22,0],[0,0.44,0],[0,0.67,0],[0.015,0.89,0],[0.25,0.91,0],[0.5,0.91,0],[0.785,0.955,0]];verticalLabelPosition=bottom;sketch=0;html=1;verticalAlign=top;aspect=fixed;align=center;pointerEvents=1;shape=mxgraph.cisco19.x509_certificate2;fillColor=#FAFAFA;strokeColor=light-dark(#005073,#000000);" value="" vertex="1">
+          <mxGeometry height="36.5" width="38.42" x="1080" y="553.25" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-144" parent="1" style="whiteSpace=wrap;html=1;shape=mxgraph.basic.document;fillColor=light-dark(#005073,#000000);strokeColor=light-dark(#000000,#000000);" value="" vertex="1">
+          <mxGeometry height="30" width="22.5" x="1135" y="556.5" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-145" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontSize=16;" value="Solve challenge" vertex="1">
+          <mxGeometry height="33" width="170" x="1172" y="555" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-146" edge="1" parent="1" style="shape=flexArrow;endArrow=classic;startArrow=classic;html=1;rounded=0;entryX=0;entryY=0.911;entryDx=0;entryDy=0;entryPerimeter=0;fillColor=#6d8764;strokeColor=#3A5431;width=17;endSize=6;" value="">
+          <mxGeometry height="100" relative="1" width="100" as="geometry">
+            <mxPoint x="780" y="575" as="sourcePoint" />
+            <mxPoint x="1060" y="576" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-147" connectable="0" parent="vTWKECJPknn-pvVOLBbK-146" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=none;fontColor=#FFFFFF;fontStyle=1" value="Authenticated" vertex="1">
+          <mxGeometry relative="1" x="0.1776" y="-1" as="geometry">
+            <mxPoint x="-22" y="-1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-148" parent="1" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=#B09500;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;outlineConnect=0;align=center;shape=mxgraph.office.security.key_permissions;fillColor=#FFFF33;fontColor=#000000;" value="" vertex="1">
+          <mxGeometry height="40" width="18.87" x="477.96" y="625" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-151" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontSize=16;" value="HKDF" vertex="1">
+          <mxGeometry height="23" width="170" x="508.42" y="622" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-152" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontSize=16;" value="AES-GCM 256 session key" vertex="1">
+          <mxGeometry height="23" width="202" x="508.42" y="645" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-153" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b0e3e6;strokeColor=#0e8088;" value="" vertex="1">
+          <mxGeometry height="97" width="230" x="540" y="678" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-155" parent="1" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=#B09500;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;outlineConnect=0;align=center;shape=mxgraph.office.security.key_permissions;fillColor=#FFFF33;fontColor=#000000;" value="" vertex="1">
+          <mxGeometry height="40" width="18.87" x="1080" y="628" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-156" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontSize=16;" value="HKDF" vertex="1">
+          <mxGeometry height="23" width="170" x="1110.46" y="625" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-157" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontSize=16;" value="AES-GCM 256 session key" vertex="1">
+          <mxGeometry height="23" width="202" x="1110.46" y="648" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-163" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1040" y="686" />
+              <mxPoint x="1060" y="685" />
+            </Array>
+            <mxPoint x="1020" y="685.5238095238092" as="sourcePoint" />
+            <mxPoint x="1060" y="685" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-164" parent="1" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=#B09500;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;outlineConnect=0;align=center;shape=mxgraph.office.security.key_permissions;fillColor=#FFFF33;fontColor=#000000;" value="" vertex="1">
+          <mxGeometry height="30" width="14.15" x="643.92" y="663" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-167" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f0a30a;fontColor=#000000;strokeColor=#BD7000;" value="Nonce" vertex="1">
+          <mxGeometry height="16" width="59.58" x="620.42" y="744" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-168" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d80073;fontColor=#ffffff;strokeColor=#A50040;" value="Tag" vertex="1">
+          <mxGeometry height="16" width="60" x="704" y="750" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-173" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1ba1e2;fontColor=#ffffff;strokeColor=#006EAF;" value="Raw Data Payload" vertex="1">
+          <mxGeometry height="69" width="50" x="547.5" y="696" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-174" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="599.42" y="729.4" as="sourcePoint" />
+            <mxPoint x="619.42" y="729.4" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-175" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#60a917;fontColor=#ffffff;strokeColor=#2D7600;" value="Ciphertext" vertex="1">
+          <mxGeometry height="39" width="60" x="704" y="693" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-176" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="682" y="729.55" as="sourcePoint" />
+            <mxPoint x="700.42" y="729.4499999999999" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-177" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f0a30a;fontColor=#000000;strokeColor=#BD7000;" value="Nonce" vertex="1">
+          <mxGeometry height="16" width="60" x="704" y="733" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-178" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b0e3e6;strokeColor=#0e8088;" value="" vertex="1">
+          <mxGeometry height="97" width="230" x="1070" y="680" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-179" parent="1" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=#B09500;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;outlineConnect=0;align=center;shape=mxgraph.office.security.key_permissions;fillColor=#FFFF33;fontColor=#000000;" value="" vertex="1">
+          <mxGeometry height="30" width="14.15" x="1186.38" y="666" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-182" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d80073;fontColor=#ffffff;strokeColor=#A50040;" value="Tag" vertex="1">
+          <mxGeometry height="16" width="60" x="1075" y="749" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-183" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1ba1e2;fontColor=#ffffff;strokeColor=#006EAF;" value="Raw Data Payload" vertex="1">
+          <mxGeometry height="69" width="50" x="1245" y="695" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-184" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="1140.0000000000002" y="730.43" as="sourcePoint" />
+            <mxPoint x="1160.0000000000002" y="730.43" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-185" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#60a917;fontColor=#ffffff;strokeColor=#2D7600;" value="Ciphertext" vertex="1">
+          <mxGeometry height="39" width="60" x="1075" y="692" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-186" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="1224.58" y="730.55" as="sourcePoint" />
+            <mxPoint x="1243" y="730.4499999999999" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-187" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f0a30a;fontColor=#000000;strokeColor=#BD7000;" value="Nonce" vertex="1">
+          <mxGeometry height="16" width="60" x="1075" y="732" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-188" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#60a917;fontColor=#ffffff;strokeColor=#2D7600;" value="Ciphertext" vertex="1">
+          <mxGeometry height="39" width="59.58" x="620.42" y="700" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-192" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f0a30a;fontColor=#000000;strokeColor=#BD7000;" value="Nonce" vertex="1">
+          <mxGeometry height="16" width="59.58" x="1163.67" y="743.5" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-193" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#60a917;fontColor=#ffffff;strokeColor=#2D7600;" value="Ciphertext" vertex="1">
+          <mxGeometry height="39" width="59.58" x="1163.67" y="699.5" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-195" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#60a917;fontColor=#ffffff;strokeColor=none;" value="Ciphertext" vertex="1">
+          <mxGeometry height="40" width="99.85" x="820.15" y="665" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-197" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d80073;fontColor=#ffffff;strokeColor=none;" value="Tag" vertex="1">
+          <mxGeometry height="40" width="49.59" x="970" y="665" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-198" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f0a30a;fontColor=#000000;strokeColor=none;" value="Nonce" vertex="1">
+          <mxGeometry height="40" width="50" x="920" y="665" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-199" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontSize=16;" value="Payload encryption" vertex="1">
+          <mxGeometry height="23" width="150.56" x="579.72" y="777" as="geometry" />
+        </mxCell>
+        <mxCell id="vTWKECJPknn-pvVOLBbK-200" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontSize=16;" value="Payload decryption" vertex="1">
+          <mxGeometry height="23" width="150.56" x="1120.18" y="777" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
