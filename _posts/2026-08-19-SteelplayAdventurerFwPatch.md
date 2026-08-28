@@ -142,6 +142,7 @@ USB VID:PID 4c4a:2342
 
 The BR23 identifier helped to find the actual chip used in the controller.
 BR23 is internal identifier name for AC635N/AC695N series of chips developed by [JieLi Tech](https://doc.zh-jieli.com/vue/#/docs/ac63).
+It has so called `piv32` architecture, that will be important once we need to get the binary tools from the toolchain.
 Having this information, it was easy to find opensource tool that allowed interacting with the USB download mode (referred as UBOOT), called [`jl-uboot-tool`](https://github.com/kagaimiq/jl-uboot-tool).
 The tool allows to download and upload firmware to BR23 chips when in UBOOT mode.
 
@@ -192,3 +193,42 @@ read 0 0x100000 steelplay-original-full.bin
 After dumping the firmware, we need to find the structure of the firmware file that the BR23 chips are using.
 
 # Part 3: Decoding the firmware file
+
+If we try to inspect the originally dumped firmware, it seems that it is encrypted.
+Simple strings command gives nothing understandable, suggesting that the firmware is encrypted.
+This is another point where LLMs have proven to be very instrumental.
+The LLM managed to find all required resources and provide code that allows to decrypt the firmware file.
+
+This documentation comes from a community reverse-engineering project, [JieLi Misc Tools](https://github.com/kagaimiq/jl-misctools), more specifically the firmware unpacker file [`fwunpack_newfw.py`](https://github.com/kagaimiq/jl-misctools/blob/main/firmware/fwunpack_newfw.py).
+
+It turns out the firmware is not truly AES encrypted, but it uses XOR stream cipher.
+There is top-level metadata which uses the same cipher with fixed key 0xFFFF.
+This metadata is basically lightweight flash file system (called JLFS), which organizes the components of the firmware, typically including names, offsets, sizes and attributes.
+Beside generic info needed for the bootloader, it also includes the application firmware details (typically called `app.bin`), but also has file that contains the chip key (typically called `isd_config.ini`)
+The application firmware uses a bit modified XOR stream cipher with Sequential Function Chart (SFC) block-key scheme.
+Basically, the app firmware is processed in 32-bytes blocks and each block gets a derived initial key, using the chip key.
+The chip key was visible when we executed the `jl-uboot-tool` script, in our case it was `0xA80F`.
+
+Using this info, we are able to get the firmware in binary format, `steelplay-app.bin`.
+
+# Part 4: Disassembly of the application firmware
+
+The binary application firmware itself is hard to consume, so we need to generate disassembly listing from it.
+As start runtime address, the one in the [AC63 SDK linker script](https://github.com/Jieli-Tech/fw-AC63_BT_SDK/blob/master/cpu/br23/sdk_ld.c) was used, `0x01E00120`.
+The disassembly can be generated with `objdump` from the binary machine code:
+
+```
+OBJDUMP=<PATH_TO_JIELI_TOOLCHAIN>/pi32v2/bin/objdump
+"$OBJDUMP" \
+    -D \
+    -b binary \
+    -m pi32v2 \
+    --adjust-vma=0x01e000c0 \
+    --start-address=<START_ADDR> \
+    --stop-address=<END_ADDR> \
+    steelplay-app.bin \
+    > steelplay-disasm.txt
+```
+
+where `--start-address` and `--stop-address` specify the range of CPU addresses that we want to disassemble.
+With this, we can extract specific bytes from the binary application, decode them as PI32V2 instructions and display their addresses in the range `<START_ADDR>-<STOP_ADDR>`.
