@@ -1,6 +1,6 @@
 ---
-title: Fixing Steelplay Adventure Nintendo Switch Controller
-date: 2026-03-30
+title: Fixing the Steelplay Adventure Nintendo Switch Controller
+date: 2026-08-19
 categories: [Reverse Engineering, Firmware, Gamepad, Bluetooth]
 tags: [reverse engineering, firmware, bluetooth]
 math: true
@@ -8,55 +8,55 @@ image:
   path: /assets/img/steelplayadv/cover.webp
 ---
 
-Some year ago, I bought myself cheap game controller from a local store, Steelplay Adventure for Nintendo Switch (the official link of the product on [archive](https://web.archive.org/web/20230606162508/https://www.steel-play.com/jvaswi00099.html), as the official web page doesn't exist anymore).
-The controller is intended to be used with Nintendo Switch, acting same as the Pro Controller, but I was expecting it to work on PC too.
-The controller was working fine with USB, but it was just not working wirelessly, via Bluetooth.
-This was very unfortunate, as I really wanted to use it as wireless controller.
+Some years ago, I bought myself a cheap game controller from a local store: the Steelplay Adventure for Nintendo Switch (here is the [archived official product page](https://web.archive.org/web/20230606162508/https://www.steel-play.com/jvaswi00099.html), as the original no longer exists).
+The controller is intended for use with the Nintendo Switch, acting like a Pro Controller, but I expected it to work on a PC too.
+The controller worked fine over USB, but not wirelessly via Bluetooth.
+This was unfortunate, as I really wanted to use it as a wireless controller.
 Eventually, I put the controller back into its box and continued playing with keyboard and mouse.
 I didn't spend time diagnosing the issue.
 
-After 2 years, I got the controller out of its box again and I was curious to see what the issue was that stopped me from getting the controller working wirelessly.
-In this blog post, I will cover the process of diagnosing the issue and getting the controller to work wirelessly with my Linux gaming configuration.
+After two years, I took the controller out of its box again, curious to find out what had prevented it from working wirelessly.
+In this blog post, I will cover the process of diagnosing the issue and getting the controller to work wirelessly with my Linux gaming setup.
 
 ## Exploring the controller
 
-Before doing any actual Bluetooth diagnosing, I searched around the internet to find more info about the controller, hoping to find firmware update that resolves the issue.
-The official manual only included basic information, such as entering pairing mode, turning the controller ON and OFF, adjusting haptic strength and similar things.
-No info about firmware updates.
+Before doing any actual Bluetooth diagnostics, I searched the internet for more information about the controller, hoping to find a firmware update that resolved the issue.
+The official manual only included basic information, such as entering pairing mode, turning the controller on and off, and adjusting the haptic strength.
+It contained no information about firmware updates.
 
-What got interesting to me is the combination that was needed to enter pairing mode: HOME + B.
-When holding this two buttons, the controller LED lights perform "marching" effect and the controller comes out with the name "Pro Controller" via Bluetooth.
-Then, I tried holding HOME + A and the controller LED lights started performing another effect and the controller was advertising on Bluetooth under different name and was able to connect to PC.
-It turns out the controller can have multiple personalities - most probably the controllers the company sells have identical or nearly identical hardware design, so it is natural to use identical or nearly identical firmware for all of them.
-If we think in more depth, it is natural that all controllers, Xbox, Playstation and Nintendo are very similar in terms of the same hardware, they all have buttons, analog sticks, typically in very similar arrangment, but they differ in how they present themselves over the wireless link.
+What caught my attention was the button combination needed to enter pairing mode: HOME + B.
+When holding these two buttons, the controller LEDs perform a "marching" effect, and the controller appears over Bluetooth under the name "Pro Controller".
+I then tried holding HOME + A. The controller LEDs performed a different effect, and the controller advertised itself under a different Bluetooth name and could connect to the PC.
+It turns out that the controller can have multiple personalities. The controllers the company sells most likely have identical or nearly identical hardware, so it makes sense to use identical or nearly identical firmware for all of them.
+At a high level, Xbox, PlayStation, and Nintendo controllers all have similar hardware: buttons and analog sticks in broadly similar arrangements. The main difference is how they present themselves over the wired or wireless link.
 
-Now, although the HOME + A mode was working, there were few issues, such as the haptic wasn't working, the gyro was not working, which I really wanted to get running.
-It was clear that there was some firmware bug for the regular Nintendo controller mode (HOME + B), that was preventing the controller to connect with PC.
+Although HOME + A mode worked, it had a few limitations: neither haptic feedback nor the gyroscope worked, and I wanted to use both.
+It was clear that a firmware bug in the regular Nintendo controller mode (HOME + B) was preventing the controller from connecting to the PC.
 
-I carried on searching with the PID and VID for the controller, and noticed that there are many controllers that have same 4 LED lights, 5 additional buttons in the center, greatly reassembling the controller I have.
+I continued searching using the controller's PID and VID and noticed many controllers with the same four LEDs and five additional buttons in the center, closely resembling mine.
 With more digging, I found out that the combination HOME + X + Y puts the controller in firmware update mode.
-I tried multiple firmware update programs for different controllers, but none were working.
+I tried multiple firmware-update programs for different controllers, but none worked.
 
-Then, I've stopped finding "cheap" solutions and moved to diagnosing the problem.
+At that point, I stopped looking for "cheap" solutions and moved on to diagnosing the problem.
 
 ## Part 1: Diagnosing the problem
 
-In Nintendo switch mode, the controller uses Bluetooth BR/EDR (Basic Rate / Enhanced Data Rate, also referred to as Bluetooth Classic), not Bluetooth Low Energy (BLE).
+In Nintendo Switch mode, the controller uses Bluetooth BR/EDR (Basic Rate/Enhanced Data Rate, also referred to as Bluetooth Classic), not Bluetooth Low Energy (BLE).
 I will simply refer to the communication protocol as Bluetooth.
 
-Initially the controller could pair, authenticate and encrypt successfully, but Linux did not end up with a usable Nintendo HID device.
-Although pairing was successful, retrieving the controller capabilities using Service Discovery Protocol (SDP) was failing.
+Initially, the controller could pair, authenticate, and enable encryption successfully, but Linux did not end up with a usable Nintendo HID device.
+Although pairing succeeded, retrieving the controller's capabilities using the Service Discovery Protocol (SDP) failed.
 
-SDP is Bluetooth service, which can simply be thought as small database running on the Bluetooth device, and the PC sends queries to this database.
-The SDP record contains attributes describing the service.
-The controller is expected to have SDP records for Human Interface Device (HID) and Plug and Play (PnP) information, describing the manufacturer and product ID.
-In our case, these records should match Nintendo Switch Pro Controller ones, as our controller is trying to emulate the Nintendo controller.
+SDP is a Bluetooth service that can be thought of as a small database running on the Bluetooth device. The PC sends queries to this database.
+An SDP record contains attributes describing a service.
+The controller is expected to have SDP records for Human Interface Device (HID) and Plug and Play (PnP) information, including vendor and product identifiers.
+In our case, these records should match those of a Nintendo Switch Pro Controller, as our controller is trying to emulate one.
 
 ### HID service
 
-Before proceeding to actual problem, it is worth noting few more things about the HID service.
+Before proceeding to the actual problem, it is worth noting a few more things about the HID service.
 The idea of the HID service is that the operating system doesn't need to understand every controller from scratch.
-Instead, the device provides HID report descriptor, which describes the format of the reports exchanged between the device and the computer.
+Instead, the device provides an HID report descriptor, which describes the format of the reports exchanged between the device and the computer.
 Putting it simply, the HID report can be thought of as:
 
 ```
@@ -68,13 +68,13 @@ byte 4: right stick X
 byte 5: right stick Y
 ```
 
-The Nintendo controller HID descriptor is more complicated and for this purpose it is separated in a dedicated driver called [`hid-nintendo`](https://github.com/torvalds/linux/blob/master/drivers/hid/hid-nintendo.c).
-For this driver to be loaded, the Bluetooth stack has to successfully discover the device HID service.
+Nintendo controllers use a dedicated Linux driver called [`hid-nintendo`](https://github.com/torvalds/linux/blob/master/drivers/hid/hid-nintendo.c) to handle their device-specific initialization, reports, output, and quirks.
+For this driver to be loaded, the Bluetooth stack has to successfully discover the device's HID service.
 
 Bluetooth HID uses two L2CAP channels.
-L2CAP is basically traffic manager that basically manages how data flows from higher application level to lower radio level.
-L2CAP has a concept of Protocol/Service Multiplexer (PSM), which acts similarly to network ports used in TCP/UDP.
-The first HID channel is called HID Control channel, having PSM number 0x0011, used for control-oriented communication, while the second HID channel is called HID Interrupt channel, having PSM number 0x0013, used for carrying most of the HID traffic.
+L2CAP is a traffic manager that controls how data flows between higher application layers and the lower radio layer.
+L2CAP has a concept called the Protocol/Service Multiplexer (PSM), which acts similarly to the port numbers used by TCP and UDP.
+The first HID channel is the HID Control channel on PSM 0x0011, used for control-oriented communication. The second is the HID Interrupt channel on PSM 0x0013, which carries most of the HID traffic.
 
 Having this knowledge, the expected sequence of getting the controller working is:
 
@@ -88,16 +88,16 @@ Having this knowledge, the expected sequence of getting the controller working i
 8. Open L2CAP PSM 0x0013 (HID Interrupt)
 9. Start exchanging HID reports
 
-It was clear that the fail was happening on steps 4 and 5, but it was unclear why.
+It was clear that the failure occurred at steps 4 and 5, but it was unclear why.
 To diagnose the problem, we need to check what the Linux Bluetooth stack (BlueZ) actually received.
-For this purpose, we can use the [`btmon`](https://github.com/bluez/bluez/wiki/btmon) utility, which is basically Bluetooth monitor utility, storing the Bluetooth traffic as seen by the Linux stack.
-Storing a Bluetooth stack capture is simply done with
+For this purpose, we can use the [`btmon`](https://github.com/bluez/bluez/wiki/btmon) utility, a Bluetooth monitor that captures traffic as seen by the Linux stack.
+We can save a Bluetooth stack capture with
 
 ```shell
 sudo btmon -w capture.btsnoop
 ```
 
-and later inspection is possible with
+and inspect it later with
 
 ```shell
 btmon -r capture.btsnoop
@@ -105,10 +105,10 @@ btmon -r capture.btsnoop
 
 It is also possible to open `btsnoop` files with [Wireshark](https://www.wireshark.org/).
 
-Instead of manually trying to read and parse the capture file, we can simply utilize LLM to help with that task.
+Instead of manually reading and parsing the capture file, we can use an LLM to help with the task.
 
-After starting `btmon` capture session, I've put the controller in pairing mode, and used `bluetoothctl` to utilize BlueZ.
-The Mac address of the controller is `A0:5A:5D:47:BF:83`, so I executed the following commands inside `bluetoothctl`:
+After starting a `btmon` capture session, I put the controller in pairing mode and used `bluetoothctl` to interact with BlueZ.
+The MAC address of my controller is `A0:5A:5D:47:BF:83`, so I executed the following commands inside `bluetoothctl` (replace the address with that of your controller):
 
 ```shell
 remove A0:5A:5D:47:BF:83
@@ -118,17 +118,17 @@ trust A0:5A:5D:47:BF:83
 connect A0:5A:5D:47:BF:83
 ```
 
-After trying connect, the controller was immediately disconnecting, which is the issue we are trying to diagnose now.
+After I tried to connect, the controller disconnected immediately—the issue we are trying to diagnose.
 
 After collecting the `steelplay.btsnoop` file, I used GPT-5.6 Sol (High effort) to inspect the file and find the issue.
 
-There were 2 issues detected:
+Two issues were detected:
 
-1. BlueZ was asking SDP for UUID 0x1200, which is PnP Information, but instead of getting PnP record, got the Nintendo HID record.
-2. Even with the wrong HID record returned, there was visible SDP violation - missing bytes in the SDP response. The HID record has 384 bytes, but each SDP response is list of attribute lists. The bytes describing the outer list were missing.
+1. BlueZ searched SDP for UUID 0x1200, which identifies PnP Information, but received the Nintendo HID record instead of the PnP record.
+2. The `ServiceSearchAttributeResponse` also violated the SDP format. Its `AttributeLists` field must be an outer data-element sequence containing one attribute-list sequence per matching service record. The firmware returned the 384-byte HID attribute-list sequence directly, omitting the outer sequence header.
 
 To confirm the issues, we created a simple Python script that allowed us to easily send SDP requests for PnP and HID records, and the result was very interesting: the records were perfectly swapped.
-PnP request returned HID record, while HID request returned PnP record.
+A PnP request returned the HID record, while a HID request returned the PnP record.
 
 ```python
 #!/usr/bin/env python3
@@ -284,28 +284,28 @@ if __name__ == "__main__":
 ```
 {: file='sdp_matrix_inspect.py'}
 
-Looking at these issues, it was looking promising that the first one would easily be patched on firmware level, but the second seemed a bit harder to patch.
-Nevertheless, before patching, we would need a way to extract the firmware of the device first.
+Of these two issues, the first looked easy to patch at the firmware level, but the second seemed more difficult.
+Before patching either one, however, we first needed a way to extract the device's firmware.
 
 ## Part 2: Extracting the firmware
 
-We already found a way to put the controller in firmware update mode by holding HOME + X + Y buttons.
-Once we put the controller in firmware update mode, checking USB devices, using tool such as `lsusb`, the controller was enumerated as:
+We had already found a way to put the controller into firmware-update mode by holding HOME + X + Y.
+Once in firmware-update mode, the controller appeared in a USB-device listing from a tool such as `lsusb` as:
 
 ```
 BR23 UBOOT1.00
 USB VID:PID 4c4a:2342
 ```
 
-The BR23 identifier helped to find the actual chip used in the controller.
-BR23 is internal identifier name for AC635N/AC695N series of chips developed by [JieLi Tech](https://doc.zh-jieli.com/vue/#/docs/ac63).
-It has so called `piv32` architecture, that will be important once we need to get the binary tools from the toolchain.
-Having this information, it was easy to find opensource tool that allowed interacting with the USB download mode (referred as UBOOT), called [`jl-uboot-tool`](https://github.com/kagaimiq/jl-uboot-tool).
-The tool allows to download and upload firmware to BR23 chips when in UBOOT mode.
+The BR23 identifier helped identify the actual chip used in the controller.
+BR23 is an internal identifier for the AC635N/AC695N series of chips developed by [JieLi Tech](https://doc.zh-jieli.com/vue/#/docs/ac63).
+It uses the `pi32v2` architecture, which becomes important when selecting binary utilities from the toolchain.
+With this information, it was easy to find an open-source tool for interacting with the USB download mode (referred to as UBOOT): [`jl-uboot-tool`](https://github.com/kagaimiq/jl-uboot-tool).
+The tool can read and write the flash of BR23 chips while they are in UBOOT mode.
 
-The tool is written in Python and easy to set up.
-I've created virtual environment to run the tool, using the provided `jluboottool.py` script.
-Ensure `sg` module is loaded on Linux (`modprobe sg`).
+The tool is written in Python and is easy to set up.
+I created a virtual environment to run the provided `jluboottool.py` script.
+On Linux, ensure that the `sg` module is loaded (`modprobe sg`).
 
 Once the tool is started, it shows the following output if it recognizes the connected chip:
 
@@ -339,38 +339,37 @@ The Loader has been successfully installed.
 ```
 {: file='.venv/bin/jluboottool.py --chip br23'}
 
-To dump the firmware, we need to provide specific addresses to store.
-Using the provided JEDEC ID of the SPI NOR flash the tool reports, `0xeb6014`, we can see that the Flash size is 8 MBit (1 MiB), so we can dump the whole flash content to file by entering:
+To dump the firmware, we need to specify the flash range to read.
+From the SPI NOR flash's reported JEDEC ID, `0xeb6014`, we can determine that its capacity is 8 Mbit (1 MiB). We can therefore dump the entire flash to a file by entering:
 
 ```shell
 read 0 0x100000 steelplay-original-full.bin
 ```
 
-After dumping the firmware, we need to find the structure of the firmware file that the BR23 chips are using.
+After dumping the firmware, we need to determine the structure of the firmware format used by BR23 chips.
 
 ## Part 3: Decoding the firmware file
 
-If we try to inspect the originally dumped firmware, it seems that it is encrypted.
-Simple strings command gives nothing understandable, suggesting that the firmware is encrypted.
+If we inspect the original firmware dump, it appears to be encrypted or scrambled.
+A simple `strings` command produces nothing intelligible, supporting that conclusion.
 This is another point where LLMs have proven to be very instrumental.
-The LLM managed to find all required resources and provide code that allows to decrypt the firmware file.
+The LLM found the required resources and provided code that could descramble the firmware file.
 
-This documentation comes from a community reverse-engineering project, [JieLi Misc Tools](https://github.com/kagaimiq/jl-misctools), more specifically the firmware unpacker file [`fwunpack_newfw.py`](https://github.com/kagaimiq/jl-misctools/blob/main/firmware/fwunpack_newfw.py).
+The relevant implementation comes from the community reverse-engineering project [JieLi Misc Tools](https://github.com/kagaimiq/jl-misctools), specifically its firmware unpacker, [`fwunpack_newfw.py`](https://github.com/kagaimiq/jl-misctools/blob/main/firmware/fwunpack_newfw.py).
 
-It turns out the firmware is not truly AES encrypted, but it uses XOR stream cipher.
-There is top-level metadata which uses the same cipher with fixed key 0xFFFF.
-This metadata is basically lightweight flash file system (called JLFS), which organizes the components of the firmware, typically including names, offsets, sizes and attributes.
-Beside generic info needed for the bootloader, it also includes the application firmware details (typically called `app.bin`), but also has file that contains the chip key (typically called `isd_config.ini`)
-The application firmware uses a bit modified XOR stream cipher with Sequential Function Chart (SFC) block-key scheme.
-Basically, the app firmware is processed in 32-bytes blocks and each block gets a derived initial key, using the chip key.
-The chip key was visible when we executed the `jl-uboot-tool` script, in our case it was `0xA80F`.
+It turns out that the firmware is not encrypted with AES. Instead, it is scrambled with a proprietary LFSR-based XOR stream cipher.
+The top-level metadata uses this cipher with the fixed key `0xFFFF`.
+This metadata forms a lightweight flash file system called JLFS, which organizes firmware components and stores their names, offsets, sizes, and attributes.
+Besides the generic information needed by the bootloader, it describes the application firmware (typically `app.bin`) and includes a file containing the encoded chip key (typically `isd_config.ini`).
+The application area uses a variation associated with JieLi's SPI Flash Controller (SFC). It is processed in 32-byte blocks, each using an initial key derived from the chip key and the block address.
+The chip key was visible when we ran the `jl-uboot-tool` script; in our case, it was `0xA80F`.
 
-Using this info, we are able to get the firmware in binary format, `steelplay-app.bin`.
+Using this information, we can extract the application firmware as a binary file, `steelplay-app.bin`.
 
 ## Part 4: Disassembly of the application firmware
 
-The binary application firmware itself is hard to consume, so we need to generate disassembly listing from it.
-As start runtime address, the one in the [AC63 SDK linker script](https://github.com/Jieli-Tech/fw-AC63_BT_SDK/blob/master/cpu/br23/sdk_ld.c) was used, `0x01E00120`.
+The binary application firmware is difficult to inspect directly, so we need to generate a disassembly listing from it.
+The [AC63 SDK linker script](https://github.com/Jieli-Tech/fw-AC63_BT_SDK/blob/master/cpu/br23/sdk_ld.c) defines `CODE_BEG` as `0x01E000C0` and the `code0` executable region as starting at `0x01E00120`. Because `steelplay-app.bin` includes the 0x60 bytes preceding the executable region, we map the beginning of the complete blob to `0x01E000C0`:
 The disassembly can be generated with `objdump` from the binary machine code:
 
 ```shell
@@ -386,16 +385,16 @@ OBJDUMP=<PATH_TO_JIELI_TOOLCHAIN>/pi32v2/bin/objdump
     > steelplay-disasm.txt
 ```
 
-where `--start-address` and `--stop-address` specify the range of CPU addresses that we want to disassemble.
-If we omit them, then we disassemble the whole binary file.
-With this, we can extract specific bytes from the binary application, decode them as PI32V2 instructions and display their addresses in the range `<START_ADDR>-<STOP_ADDR>`.
+Here, `--start-address` and `--stop-address` specify the range of CPU addresses to disassemble.
+If we omit them, `objdump` disassembles the entire binary file.
+This lets us decode a selected range of the binary application as PI32V2 instructions and display the corresponding CPU addresses.
 
 ### Bug 1: Finding the PnP and HID arrays
 
-To resolve the first bug, where SDP responded with HID array when asked for PnP information and vice-versa, we will try to find the actual PnP and HID arrays in the firmware.
-We expect the arrays addresses are simply swapped in the function that prepares the SDP response arrays.
-For this purpose, we run scan over `steelplay-app.bin` trying to find expected SDP response bytes that we collected with `btmon`.
-We managed to find the matches in the decrypted application binary file, and we can follow the following calculations to get the address of the buffers (`app_offset = fw_offset + 0x30E0`):
+To resolve the first bug, where SDP returned the HID array when asked for PnP information and vice versa, we first locate the actual PnP and HID arrays in the firmware.
+We expect their addresses to be swapped in the function that prepares SDP responses.
+For this purpose, we scan `steelplay-app.bin` for the SDP response bytes collected with `btmon`.
+We found both matches in the decrypted application binary. Because `app.bin` begins at offset `0x30E0` in the full firmware image, the offsets are related by `fw_offset = app_offset + 0x30E0`:
 
 |                        | HID          | PnP          |
 | :--------------------- | :----------- | :---------   |
@@ -403,10 +402,9 @@ We managed to find the matches in the decrypted application binary file, and we 
 | fw binary offset       | 0x23BAA      | 0x23671      |
 | size (bytes)           | 0x0180 (384) | 0x008F (143) |
 
-We expect to be a procedure in the code that matches calling function like this: `sdp_send_response(sdp_data, data_length)`.
-With the help of the LLM, we can inspect the disassembly and find the expected procedure, as it may take some time to manually inspect the disassembly to find the procedure.
-The reason is that the address is most probably indirectly specified, and we need to search using the size, which will return multiple occurrences.
-The LLM managed to find the correct disassembly parts that we needed using the array size as a first search and then matching the array addresses in the surrounding code, which indeed were indirectly addressed.
+We expect a procedure in the code to contain the equivalent of a call such as `sdp_send_response(sdp_data, data_length)`.
+With the help of the LLM, we can inspect the disassembly and find the relevant procedure, which would take time to locate manually.
+The addresses are specified indirectly, so we first search by array size—which produces multiple matches—and then identify the array addresses in the surrounding code.
 The equivalent C code that the LLM found in the disassembly is:
 
 ```c
@@ -421,12 +419,12 @@ else if (uuid == HID_UUID) {
 send_response(..., ptr, len);
 ```
 
-So patching the first issue is quite easy, we just need to swap that `ptr` assignment inside the condition branches.
+Patching the first issue is therefore straightforward: we need to swap the `ptr` assignments in the conditional branches.
 But before patching, we must fix the second issue too.
 
 ### Bug 2: wrapping the records with the outer sequence
 
-We know that the second issue is not including the outer sequence header for the SDP response.
+We know that the second issue is the missing outer `AttributeLists` sequence header in the SDP `ServiceSearchAttributeResponse`.
 Conceptually, the equivalent C code in the firmware is:
 
 ```c
@@ -442,7 +440,7 @@ if (uuid == HID_UUID)
 send(inner_attribute_list);
 ```
 
-Instead, we wanted to get equivalent C code like the following for the selection:
+Instead, we want the selection logic to be equivalent to:
 
 ```c
 if (uuid == PNP_UUID)
@@ -465,49 +463,50 @@ wrapped_HID =
     + original 384-byte HID record
 ```
 
-The quickest and easiest way to fix this issue is to find place in the firmware where we can put the wrapped records.
-We need total of 387 + 146 = 533 bytes of memory.
-As the controller has multiple personalities, we can easily repurpose other SDP record for this purpose, as we are only interested in getting the Nintendo controller one working.
-And interestingly, there was a record in the application firmware, which was with size 683 bytes (derived by inspecting the header bytes), so we chose that location to insert the wrapped records (address range `0x243C3..0x2466D`).
-The whole neighbourhood was basically static SDP profile-data storage and no actual executable code, so there were multiple locations that we could chose for the wrapped records.
+The quickest way to fix this issue is to find space in the firmware for the wrapped records.
+We need a total of 387 + 146 = 533 bytes.
+Because the controller has multiple personalities, we can repurpose an SDP record belonging to another personality; we are interested only in making the Nintendo controller mode work.
+The application firmware contains a 683-byte record, with its size derived from the header bytes, so we chose that location for the wrapped records (address range `0x243C3..0x2466D`, inclusive).
+The entire surrounding region contains static SDP profile data rather than executable code, so several locations could accommodate the wrapped records.
 
 Once we had this plan in motion, it was quite trivial to patch the firmware code.
 
 ## Part 5: Patching the firmware
 
-The patching of the decrypted firmware file was quite simple - byte replacement.
-We simple replaced the addresses of the SDP records with our wrapped records.
-Also, the application firmware part had CRCs that we needed to recompute so the firmware was still valid.
-With this, we got the patched decrypted firmware.
-Finally, we needed to use the same scheme that we used for decryption to encrypt the new firmware again.
-We encrypted the modified header and application binary.
+Patching the decrypted firmware file was a matter of replacing bytes.
+We replaced the addresses of the original SDP records with those of our wrapped records.
+The application firmware also had CRCs that we needed to recompute to keep the image valid.
+This produced the patched, decrypted firmware.
+Finally, we applied the same scrambling scheme again to produce a flashable image, processing the modified headers and application binary.
 
 With this, we got the new patched firmware ready for testing on the controller.
 
 ## Part 6: Finding the final issue
 
-The patched firmware could simply be flashed using the `jluboottool` when the controller is put in USB fw update mode.
+The patched firmware can be flashed using `jluboottool` while the controller is in USB firmware-update mode.
 After flashing the firmware, we proceeded with the usual pairing and connection process, but the controller was still not connecting.
-We utilized `btmon` again and there was new issue found: the patch we applied was necessary, but not sufficient.
+We used `btmon` again and found another issue: the patch was necessary but not sufficient.
 We saw that BlueZ performed the following queries and got the following responses:
 
 ```
 1. Query UUID 0x0100: empty response
 2. Query UUID 0x1200: PnP response
-3. Query UUID 0x1002: empty resposne
+3. Query UUID 0x1002: empty response
 ```
 
-There wasn't query for HID UUID `0x1124`, explaining why the device wasn't HID enumerated.
+There was no query for the HID UUID `0x1124`, explaining why the device was not enumerated as a HID device.
 
-The first empty response was to UUID `0x0100`, designated to L2CAP protocol, the second was to `0x1002`, designated to `PublicBrowseRoot`.
-Initially, the hypothesis was that the missing response was for the `PublicBrowseRoot`, which should return the SDP records for all publicly available services, in our case aggregate of HID and PnP records.
-For this purpose, we created this aggregate in the firmware and created a new patched firmware file that returned this aggregate when there was query for UUID `0x1002`, but yet again the device wasn't HID enumerated.
+The first empty response was for a service-search pattern containing UUID `0x0100`, the L2CAP protocol UUID. The second was for UUID `0x1002`, `PublicBrowseRoot`.
+Our initial hypothesis was that the missing `PublicBrowseRoot` response mattered. It should match the publicly browsable SDP records—in our case, an aggregate containing the HID and PnP attribute lists.
+We created this aggregate and patched the firmware to return it for a query containing UUID `0x1002`, but the device still was not enumerated as HID.
 
-With the help of the LLM, we inspected the BlueZ service search path, and it turns out the initial query to UUID `0x0100` is more important, as both of our services descriptors contained L2CAP.
-So we needed to return the aggregate we created as response to UUID `0x0100`.
-And indeed, after created the newly patched firmware, we could finally see the device HID enumerated and functioning great with the `hid_nintendo` driver.
+With the help of the LLM, we inspected BlueZ's service-search path. The initial search for records containing UUID `0x0100` was the important one because both of our service records contained the L2CAP protocol UUID.
+We therefore needed to return the aggregate in response to the `0x0100` search.
+After creating and flashing this final patch, the device was enumerated as HID and worked well with the `hid_nintendo` driver.
 
-All steps are provided in the following Python CLI, which expects the original encrypted firmware dump as input.
+All steps are implemented in the following Python CLI, which accepts the original scrambled firmware dump as input.
+
+> **Warning:** These byte-level patches support only the verified stock firmware build identified by the hashes in the script. Back up the original dump before flashing anything. An incompatible or interrupted flash may leave the controller unusable.
 
 ```python
 #!/usr/bin/env python3
@@ -515,7 +514,7 @@ import argparse, hashlib, struct
 from pathlib import Path
 from collections import namedtuple
 
-# Steelplay Adventurer / JieLi BR23 (AC63) firmware tool.
+# Steelplay Adventure / JieLi BR23 (AC63) firmware tool.
 # Patches are build-specific; decryption/JLFS discovery is structural.
 STOCK_ENC="c48d8aef2dd147b77bed0418ff915f9ba6e00d17ef8e371c2260443741929e36"
 STOCK_DEC="a5f561638fc99efa4bcc33f851b2be72548f911c99c7ebfd07cc18ca0633a64d"
@@ -664,7 +663,7 @@ def outname(inp,s): return inp.with_name(inp.stem+s+".bin")
 def write(p,data,label): p.write_bytes(data); print(f"{label}: {p} ({len(data):#x}, sha256={sha(data)})")
 
 def main():
-    ap=argparse.ArgumentParser(description="Steelplay Adventurer BR23 decrypt/patch/re-encrypt tool")
+    ap=argparse.ArgumentParser(description="Steelplay Adventure BR23 decrypt/patch/re-encrypt tool")
     sp=ap.add_subparsers(dest="cmd",required=True)
     d=sp.add_parser("decrypt"); d.add_argument("input",type=Path); d.add_argument("-o",type=Path); d.add_argument("--app-out",type=Path)
     e=sp.add_parser("encrypt"); e.add_argument("input",type=Path); e.add_argument("-o",type=Path)
@@ -689,7 +688,6 @@ def main():
     write(a.flash_out or Path(str(base)+f"-{a.patch}-flash.bin"),flash,"patched flash")
 
 if __name__=="__main__": main()
-
 ```
 {: file='steelplay_fw_tool.py'}
 
@@ -716,14 +714,14 @@ python steelplay_fw_tool.py patch steelplay-original-full.bin patch3
 
 ## Kudos to LLMs
 
-There were quite a lot of concepts needed to find the bug, which would require great deal of research, that would consume quite a lot of time.
-From understanding Bluetooth service discovery process, collecting and analyzing Bluetooth traces, researching already existing tools and SDKs (`jl-uboot-tool` and AC63 SDK), reading and analyzing assembly instructions and general help when getting stuck, it is truly amazing how the knowledge around the internet can easily be accessed and utilized, but also helping one to learn new things.
+Finding the bug required understanding many concepts that would otherwise have taken a great deal of time to research.
+The work ranged from understanding Bluetooth service discovery, collecting and analyzing Bluetooth traces, and researching existing tools and SDKs (`jl-uboot-tool` and the AC63 SDK) to reading assembly instructions and working through dead ends. It is remarkable how LLMs can make knowledge from across the internet easier to access and apply while helping us learn new things.
 
 ## Conclusion
 
-It is unfortunate that the controller was not working out of the box on PC as I wanted it to work.
-Having the hardware unfunctional because of firmware issues is very frustrating.
-Sadly, for products at this price range is typically not expected to have firmware fixes for use-case as mine, as the controller was not even intended for such use-case.
+It is unfortunate that the controller did not work out of the box on a PC as I had hoped.
+Having functional hardware rendered unusable by firmware issues is frustrating.
+Sadly, products in this price range are not typically expected to receive firmware fixes for a use case like mine, especially when the controller was not intended for that use case.
 
-Nevertheless, it gave interesting side project that helped me learn new concepts and skills, which is very valuable to me.
-It feels great when the controller is finally able to connect to my Linux gaming machine and it is possible to utilize all its functionalities.
+Nevertheless, it became an interesting side project that helped me learn valuable new concepts and skills.
+It feels great to have the controller finally connect to my Linux gaming machine with all of its functionality available.

@@ -3,7 +3,7 @@ import argparse, hashlib, struct
 from pathlib import Path
 from collections import namedtuple
 
-# Steelplay Adventurer / JieLi BR23 (AC63) firmware tool.
+# Steelplay Adventure / JieLi BR23 (AC63) firmware tool.
 # Patches are build-specific; decryption/JLFS discovery is structural.
 STOCK_ENC="c48d8aef2dd147b77bed0418ff915f9ba6e00d17ef8e371c2260443741929e36"
 STOCK_DEC="a5f561638fc99efa4bcc33f851b2be72548f911c99c7ebfd07cc18ca0633a64d"
@@ -152,7 +152,7 @@ def outname(inp,s): return inp.with_name(inp.stem+s+".bin")
 def write(p,data,label): p.write_bytes(data); print(f"{label}: {p} ({len(data):#x}, sha256={sha(data)})")
 
 def main():
-    ap=argparse.ArgumentParser(description="Steelplay Adventurer BR23 decrypt/patch/re-encrypt tool")
+    ap=argparse.ArgumentParser(description="Steelplay Adventure BR23 decrypt/patch/re-encrypt tool")
     sp=ap.add_subparsers(dest="cmd",required=True)
     d=sp.add_parser("decrypt"); d.add_argument("input",type=Path); d.add_argument("-o",type=Path); d.add_argument("--app-out",type=Path)
     e=sp.add_parser("encrypt"); e.add_argument("input",type=Path); e.add_argument("-o",type=Path)
