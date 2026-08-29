@@ -18,7 +18,7 @@ I didn't spend time diagnosing the issue.
 After 2 years, I got the controller out of its box again and I was curious to see what the issue was that stopped me from getting the controller working wirelessly.
 In this blog post, I will cover the process of diagnosing the issue and getting the controller to work wirelessly with my Linux gaming configuration.
 
-# Exploring the controller
+## Exploring the controller
 
 Before doing any actual Bluetooth diagnosing, I searched around the internet to find more info about the controller, hoping to find firmware update that resolves the issue.
 The official manual only included basic information, such as entering pairing mode, turning the controller ON and OFF, adjusting haptic strength and similar things.
@@ -39,7 +39,7 @@ I tried multiple firmware update programs for different controllers, but none we
 
 Then, I've stopped finding "cheap" solutions and moved to diagnosing the problem.
 
-# Part 1: Diagnosing the problem
+## Part 1: Diagnosing the problem
 
 In Nintendo switch mode, the controller uses Bluetooth BR/EDR (Basic Rate / Enhanced Data Rate, also referred to as Bluetooth Classic), not Bluetooth Low Energy (BLE).
 I will simply refer to the communication protocol as Bluetooth.
@@ -52,7 +52,7 @@ The SDP record contains attributes describing the service.
 The controller is expected to have SDP records for Human Interface Device (HID) and Plug and Play (PnP) information, describing the manufacturer and product ID.
 In our case, these records should match Nintendo Switch Pro Controller ones, as our controller is trying to emulate the Nintendo controller.
 
-## HID service
+### HID service
 
 Before proceeding to actual problem, it is worth noting few more things about the HID service.
 The idea of the HID service is that the operating system doesn't need to understand every controller from scratch.
@@ -93,13 +93,13 @@ To diagnose the problem, we need to check what the Linux Bluetooth stack (BlueZ)
 For this purpose, we can use the [`btmon`](https://github.com/bluez/bluez/wiki/btmon) utility, which is basically Bluetooth monitor utility, storing the Bluetooth traffic as seen by the Linux stack.
 Storing a Bluetooth stack capture is simply done with
 
-```
+```shell
 sudo btmon -w capture.btsnoop
 ```
 
 and later inspection is possible with
 
-```
+```shell
 btmon -r capture.btsnoop
 ```
 
@@ -110,7 +110,7 @@ Instead of manually trying to read and parse the capture file, we can simply uti
 After starting `btmon` capture session, I've put the controller in pairing mode, and used `bluetoothctl` to utilize BlueZ.
 The Mac address of the controller is `A0:5A:5D:47:BF:83`, so I executed the following commands inside `bluetoothctl`:
 
-```
+```shell
 remove A0:5A:5D:47:BF:83
 scan bredr
 pair A0:5A:5D:47:BF:83
@@ -282,13 +282,12 @@ def main():
 if __name__ == "__main__":
     main()
 ```
-
-{.file='sdp_matrix_inspect.py'}
+{: file='sdp_matrix_inspect.py'}
 
 Looking at these issues, it was looking promising that the first one would easily be patched on firmware level, but the second seemed a bit harder to patch.
 Nevertheless, before patching, we would need a way to extract the firmware of the device first.
 
-# Part 2: Extracting the firmware
+## Part 2: Extracting the firmware
 
 We already found a way to put the controller in firmware update mode by holding HOME + X + Y buttons.
 Once we put the controller in firmware update mode, checking USB devices, using tool such as `lsusb`, the controller was enumerated as:
@@ -311,8 +310,6 @@ Ensure `sg` module is loaded on Linux (`modprobe sg`).
 Once the tool is started, it shows the following output if it recognizes the connected chip:
 
 ```
-# Output of sudo .venv/bin/jluboottool.py --chip br23
-
 Searching for "br23" devices..
 Found a device: BR23 UBOOT1.00 (1.00) at /dev/sg2
 Waiting for [/dev/sg2] try! ok (BR23 UBOOT1.00 1.00)
@@ -340,17 +337,18 @@ The Loader has been successfully installed.
   `------------------------------------------------------'
 =>JL:
 ```
+{: file='.venv/bin/jluboottool.py --chip br23'}
 
 To dump the firmware, we need to provide specific addresses to store.
 Using the provided JEDEC ID of the SPI NOR flash the tool reports, `0xeb6014`, we can see that the Flash size is 8 MBit (1 MiB), so we can dump the whole flash content to file by entering:
 
-```
+```shell
 read 0 0x100000 steelplay-original-full.bin
 ```
 
 After dumping the firmware, we need to find the structure of the firmware file that the BR23 chips are using.
 
-# Part 3: Decoding the firmware file
+## Part 3: Decoding the firmware file
 
 If we try to inspect the originally dumped firmware, it seems that it is encrypted.
 Simple strings command gives nothing understandable, suggesting that the firmware is encrypted.
@@ -369,13 +367,13 @@ The chip key was visible when we executed the `jl-uboot-tool` script, in our cas
 
 Using this info, we are able to get the firmware in binary format, `steelplay-app.bin`.
 
-# Part 4: Disassembly of the application firmware
+## Part 4: Disassembly of the application firmware
 
 The binary application firmware itself is hard to consume, so we need to generate disassembly listing from it.
 As start runtime address, the one in the [AC63 SDK linker script](https://github.com/Jieli-Tech/fw-AC63_BT_SDK/blob/master/cpu/br23/sdk_ld.c) was used, `0x01E00120`.
 The disassembly can be generated with `objdump` from the binary machine code:
 
-```
+```shell
 OBJDUMP=<PATH_TO_JIELI_TOOLCHAIN>/pi32v2/bin/objdump
 "$OBJDUMP" \
     -D \
@@ -392,7 +390,7 @@ where `--start-address` and `--stop-address` specify the range of CPU addresses 
 If we omit them, then we disassemble the whole binary file.
 With this, we can extract specific bytes from the binary application, decode them as PI32V2 instructions and display their addresses in the range `<START_ADDR>-<STOP_ADDR>`.
 
-## Bug 1 Inspection: Finding the PnP and HID arrays
+### Bug 1: Finding the PnP and HID arrays
 
 To resolve the first bug, where SDP responded with HID array when asked for PnP information and vice-versa, we will try to find the actual PnP and HID arrays in the firmware.
 We expect the arrays addresses are simply swapped in the function that prepares the SDP response arrays.
@@ -426,7 +424,7 @@ send_response(..., ptr, len);
 So patching the first issue is quite easy, we just need to swap that `ptr` assignment inside the condition branches.
 But before patching, we must fix the second issue too.
 
-## Bug 2 solution: wrapping the records with the outer sequence
+### Bug 2: wrapping the records with the outer sequence
 
 We know that the second issue is not including the outer sequence header for the SDP response.
 Conceptually, the equivalent C code in the firmware is:
@@ -475,7 +473,7 @@ The whole neighbourhood was basically static SDP profile-data storage and no act
 
 Once we had this plan in motion, it was quite trivial to patch the firmware code.
 
-# Part 5: Patching the firmware
+## Part 5: Patching the firmware
 
 The patching of the decrypted firmware file was quite simple - byte replacement.
 We simple replaced the addresses of the SDP records with our wrapped records.
@@ -486,7 +484,7 @@ We encrypted the modified header and application binary.
 
 With this, we got the new patched firmware ready for testing on the controller.
 
-# Part 6: Finding the final issue
+## Part 6: Finding the final issue
 
 The patched firmware could simply be flashed using the `jluboottool` when the controller is put in USB fw update mode.
 After flashing the firmware, we proceeded with the usual pairing and connection process, but the controller was still not connecting.
@@ -693,12 +691,11 @@ def main():
 if __name__=="__main__": main()
 
 ```
-
-{.file='steelplay_fw_tool.py'}
+{: file='steelplay_fw_tool.py'}
 
 Usage:
 
-```
+```shell
 # 1. Decrypt original firmware dump, produces
 #   - steelplay-original-full-decrypted.bin
 #   - steelplay-original-full-app.bin
@@ -715,12 +712,14 @@ python steelplay_fw_tool.py patch steelplay-original-full.bin patch2
 python steelplay_fw_tool.py patch steelplay-original-full.bin patch3
 ```
 
-# Kudos to LLMs
+{: file='steelplay_fw_tool usage'}
+
+## Kudos to LLMs
 
 There were quite a lot of concepts needed to find the bug, which would require great deal of research, that would consume quite a lot of time.
 From understanding Bluetooth service discovery process, collecting and analyzing Bluetooth traces, researching already existing tools and SDKs (`jl-uboot-tool` and AC63 SDK), reading and analyzing assembly instructions and general help when getting stuck, it is truly amazing how the knowledge around the internet can easily be accessed and utilized, but also helping one to learn new things.
 
-# Conclusion
+## Conclusion
 
 It is unfortunate that the controller was not working out of the box on PC as I wanted it to work.
 Having the hardware unfunctional because of firmware issues is very frustrating.
