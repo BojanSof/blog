@@ -127,6 +127,164 @@ There were 2 issues detected:
 1. BlueZ was asking SDP for UUID 0x1200, which is PnP Information, but instead of getting PnP record, got the Nintendo HID record.
 2. Even with the wrong HID record returned, there was visible SDP violation - missing bytes in the SDP response. The HID record has 384 bytes, but each SDP response is list of attribute lists. The bytes describing the outer list were missing.
 
+To confirm the issues, we created a simple Python script that allowed us to easily send SDP requests for PnP and HID records, and the result was very interesting: the records were perfectly swapped.
+PnP request returned HID record, while HID request returned PnP record.
+
+```python
+#!/usr/bin/env python3
+
+import socket, struct, hashlib
+from pathlib import Path
+
+MAC = "A0:5A:5D:47:BF:83"
+PNP_HANDLE = 0x00010001
+HID_HANDLE = 0x00010000
+
+def sha(data):
+    return hashlib.sha256(data).hexdigest()
+
+def connect():
+    s = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_SEQPACKET,
+                      socket.BTPROTO_L2CAP)
+    s.settimeout(8)
+    s.connect((MAC, 0x0001))
+    return s
+
+def pdu(pdu_id, tid, params):
+    return struct.pack(">BHH", pdu_id, tid, len(params)) + params
+
+def search_pattern(uuid16):
+    return b"\x35\x03\x19" + struct.pack(">H", uuid16)
+
+def attribute_list():
+    return bytes.fromhex("35 05 0A 00 00 FF FF")
+
+def service_search(uuid16):
+    print(f"\n{'='*72}\nSERVICE SEARCH UUID 0x{uuid16:04X}\n{'='*72}")
+
+    continuation = b""
+    tid = 0x2000
+    handles = []
+    s = connect()
+
+    try:
+        while True:
+            params = (search_pattern(uuid16) +
+                      struct.pack(">H", 0xFFFF) +
+                      bytes([len(continuation)]) + continuation)
+            req = pdu(0x02, tid, params)
+
+            print("TX:", req.hex(" "))
+            s.sendall(req)
+            rsp = s.recv(4096)
+            print("RX:", rsp.hex(" "))
+
+            pid, rtid, plen = struct.unpack(">BHH", rsp[:5])
+            if pid != 0x03:
+                raise RuntimeError(f"expected PDU 03, got {pid:02x}")
+            if rtid != tid:
+                raise RuntimeError("transaction ID mismatch")
+
+            data = rsp[5:]
+            total_count, current_count = struct.unpack(">HH", data[:4])
+            pos = 4
+
+            print(f"Total handles:   {total_count}")
+            print(f"Current handles: {current_count}")
+
+            for _ in range(current_count):
+                handle = struct.unpack(">I", data[pos:pos+4])[0]
+                pos += 4
+                handles.append(handle)
+                print(f"  handle = 0x{handle:08X}")
+
+            clen = data[pos]
+            continuation = data[pos+1:pos+1+clen]
+            if not continuation:
+                break
+            tid += 1
+    finally:
+        s.close()
+
+    return handles
+
+def service_attribute(handle):
+    print(f"\n{'='*72}\nSERVICE ATTRIBUTE handle 0x{handle:08X}\n{'='*72}")
+
+    continuation = b""
+    tid = 0x3000
+    result = bytearray()
+    s = connect()
+
+    try:
+        while True:
+            params = (struct.pack(">I", handle) +
+                      struct.pack(">H", 0xFFFF) +
+                      attribute_list() +
+                      bytes([len(continuation)]) + continuation)
+            req = pdu(0x04, tid, params)
+
+            print("TX:", req.hex(" "))
+            s.sendall(req)
+            rsp = s.recv(4096)
+            print("RX:", rsp.hex(" "))
+
+            pid, rtid, plen = struct.unpack(">BHH", rsp[:5])
+            if pid != 0x05:
+                raise RuntimeError(f"expected PDU 05, got {pid:02x}")
+            if rtid != tid:
+                raise RuntimeError("transaction ID mismatch")
+
+            data = rsp[5:]
+            fragment_len = struct.unpack(">H", data[:2])[0]
+            fragment = data[2:2+fragment_len]
+            result.extend(fragment)
+
+            pos = 2 + fragment_len
+            clen = data[pos]
+            continuation = data[pos+1:pos+1+clen]
+
+            print(f"fragment={fragment_len} "
+                  f"continuation={continuation.hex() or '<end>'}")
+
+            if not continuation:
+                break
+            tid += 1
+    finally:
+        s.close()
+
+    result = bytes(result)
+    print(f"\nLength: {len(result)} / 0x{len(result):X}")
+    print(f"SHA256: {sha(result)}")
+    print("First bytes:", result[:32].hex(" "))
+    return result
+
+def main():
+    print("\nSTEP A: UUID -> handle\n")
+    pnp_search = service_search(0x1200)
+    hid_search = service_search(0x1124)
+
+    print(f"\n{'='*72}\nSEARCH SUMMARY\n{'='*72}")
+    print("UUID 0x1200 handles:", [f"0x{x:08X}" for x in pnp_search])
+    print("UUID 0x1124 handles:", [f"0x{x:08X}" for x in hid_search])
+
+    print("\nSTEP B: handle -> record\n")
+    hid_record = service_attribute(HID_HANDLE)
+    pnp_record = service_attribute(PNP_HANDLE)
+
+    Path("sdp_handle_10000.bin").write_bytes(hid_record)
+    Path("sdp_handle_10001.bin").write_bytes(pnp_record)
+
+    print(f"\n{'='*72}\nDIRECT HANDLE SUMMARY\n{'='*72}")
+    print("handle 0x00010000:", len(hid_record), sha(hid_record))
+    print("handle 0x00010001:", len(pnp_record), sha(pnp_record))
+
+if __name__ == "__main__":
+    main()
+```
+
+{.file='sdp_matrix_inspect.py'}
+
 Looking at these issues, it was looking promising that the first one would easily be patched on firmware level, but the second seemed a bit harder to patch.
 Nevertheless, before patching, we would need a way to extract the firmware of the device first.
 
@@ -231,4 +389,88 @@ OBJDUMP=<PATH_TO_JIELI_TOOLCHAIN>/pi32v2/bin/objdump
 ```
 
 where `--start-address` and `--stop-address` specify the range of CPU addresses that we want to disassemble.
+If we omit them, then we disassemble the whole binary file.
 With this, we can extract specific bytes from the binary application, decode them as PI32V2 instructions and display their addresses in the range `<START_ADDR>-<STOP_ADDR>`.
+
+## Bug 1 Inspection: Finding the PnP and HID arrays
+
+To resolve the first bug, where SDP responded with HID array when asked for PnP information and vice-versa, we will try to find the actual PnP and HID arrays in the firmware.
+We expect the arrays addresses are simply swapped in the function that prepares the SDP response arrays.
+For this purpose, we run scan over `steelplay-app.bin` trying to find expected SDP response bytes that we collected with `btmon`.
+We managed to find the matches in the decrypted application binary file, and we can follow the following calculations to get the address of the buffers (`app_offset = fw_offset + 0x30E0`):
+
+|                        | HID          | PnP          |
+| :--------------------- | :----------- | :---------   |
+| app binary offset      | 0x20ACA      | 0x20591      |
+| fw binary offset       | 0x23BAA      | 0x23671      |
+| size (bytes)           | 0x0180 (384) | 0x008F (143) |
+
+We expect to be a procedure in the code that matches calling function like this: `sdp_send_response(sdp_data, data_length)`.
+With the help of the LLM, we can inspect the disassembly and find the expected procedure, as it may take some time to manually inspect the disassembly to find the procedure.
+The reason is that the address is most probably indirectly specified, and we need to search using the size, which will return multiple occurrences.
+The LLM managed to find the correct disassembly parts that we needed using the array size as a first search and then matching the array addresses in the surrounding code, which indeed were indirectly addressed.
+The equivalent C code that the LLM found in the disassembly is:
+
+```c
+if (uuid == PNP_UUID) {
+    ptr = HID_record;
+    len = sizeof(HID_record);
+}
+else if (uuid == HID_UUID) {
+    ptr = PNP_record;
+    len = sizeof(PNP_record);
+}
+send_response(..., ptr, len);
+```
+
+So patching the first issue is quite easy, we just need to swap that `ptr` assignment inside the condition branches.
+But before patching, we must fix the second issue too.
+
+## Bug 2 solution: wrapping the records with the outer sequence
+
+We know that the second issue is not including the outer sequence header for the SDP response.
+Conceptually, the equivalent C code in the firmware is:
+
+```c
+// Bug 1: wrong record selection
+if (uuid == PNP_UUID)
+    select(HID);
+
+if (uuid == HID_UUID)
+    select(PNP);
+
+
+// Bug 2: invalid response (missing outer sequence)
+send(inner_attribute_list);
+```
+
+Instead, we wanted to get equivalent C code like the following for the selection:
+
+```c
+if (uuid == PNP_UUID)
+    select(wrapped_PNP);
+
+if (uuid == HID_UUID)
+    select(wrapped_HID);
+
+```
+
+where
+
+```
+wrapped_PNP =
+    36 00 8f
+    + original 143-byte PnP record
+
+wrapped_HID =
+    36 01 80
+    + original 384-byte HID record
+```
+
+The quickest and easiest way to fix this issue is to find place in the firmware where we can put the wrapped records.
+We need total of 387 + 146 = 533 bytes of memory.
+As the controller has multiple personalities, we can easily repurpose other SDP record for this purpose, as we are only interested in getting the Nintendo controller one working.
+And interestingly, there was a record in the application firmware, which was with size 683 bytes (derived by inspecting the header bytes), so we chose that location to insert the wrapped records (address range `0x243C3..0x2466D`).
+The whole neighbourhood was basically static SDP profile-data storage and no actual executable code, so there were multiple locations that we could chose for the wrapped records.
+
+Once we had this plan in motion, it was quite trivial to patch the firmware code - simple byte replacement.
