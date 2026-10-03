@@ -52,7 +52,12 @@ This is typical scenario of dividing specific tasks, because of peripheral avail
 
 ## Smart appliances - washing machine
 
-##
+If we take the example of modern smart washing machine, we can separate the tasks of the washing machine in two parts:
+
+1. The main logic for driving the motor, controlling the water pump, the draining system, the door, error control, etc.;
+2. The UI of the washing machine, including the rotary encoder for program selection, the display, potentially the WiFi module it has for remote control.
+
+These functions can be separated and handled by two MCUs, that may have different set of peripherals as their required functionalities are different.
 
 # Difficulties managing multi-MCU systems
 
