@@ -33,3 +33,57 @@ However, they are less useful when the main reason for separation is physical pl
 A good rule of thumb is therefore to use multiple MCUs when the hardware already divides naturally into distinct subsystems.
 If each subsystem has its own processing, power, peripheral, or physical-placement requirements, giving it some local intelligence can simplify the overall system.
 If the only reason for adding another MCU is that the main MCU is running out of processing power or peripherals, it is usually worth checking whether a more capable single MCU or heterogeneous SoC would provide a simpler solution first.
+
+In this blog post, we will strictly concentrate on multi-MCU systems, describe the difficulties regarding the management of such system, and practical demonstration using nRF54L15 and STM32U083 based dev boards.
+
+# Practical examples of multi-MCU systems
+
+To illustrate the problem, it is good to share some practical applications that benefit from multi-MCU design.
+
+## nRF54L15 + STM32N6 (BLE low power sensing + camera)
+
+## 
+
+# Difficulties managing multi-MCU systems
+
+Managing system with multiple MCUs has its difficulties.
+The main reason for this is that the system is not controlled by single firmware anymore, instead every MCU in the system has its own state, timing, firmware version, behaviour and responsibilities, so the system behaves like small distributed system.
+We are going to list the most important challenges and provide ways to handle them.
+It is important to understand that all the difficulties are manageable, but they should be treated as part of the system design, rather than think how to resolve them later.
+
+## Inter-MCU communication
+
+The MCUs must communicate between each other, so they need clearly defined protocol for exchanging commands, events, status and data.
+This includes choosing the physical interface for communication, such as I2C, SPI, UART or something else, and also defining the protocol that runs on top of it.
+This is probably the most important interface to design, as it will make it easier to develop each subsystem and prevent complexity from spreading throughout the rest of the firmware.
+
+## Ownership of responsibilities
+
+It should be clear what every MCU does and which functions it handles.
+
+## Startup and shutdown sequencing
+
+The MCUs may not boot at the same time, and in most cases one MCU controls the power of another MCUs.
+Therefore, the system should define what happens if one MCU is still booting, is powered off, restarting or temporarily unavailable.
+
+## Failure handling
+
+There are many failures that can happen, such as communication timeouts, corrupted messages, crashed firmware, watchdog resets and all of them need predictable behaviour.
+
+## Firmware compatibility
+
+It is important for MCUs to run compatible firmware between them.
+Typically, this is bound to the communication protocol, so proper protocol versioning and backwards compatibility should be planned.
+
+## Firmware updates
+
+Updating the firmware in system with multiple MCUs raises questions such as which MCU controls the update procedure, in which order are the MCUs updated, how rollback works and what happens if power is lost throughout the process.
+
+## Debugging
+
+Debugging system with multiple MCUs poses some challenges, as bugs may depend on the timing and interactions between the MCUs.
+
+## Repository and build management
+
+The firmware project for each MCU typically has its own SDK, toolchain and build system, but it also depends on shared protocol library.
+This does raise few question how to manage the projects in synchronized manner.
