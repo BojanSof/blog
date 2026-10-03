@@ -42,7 +42,17 @@ To illustrate the problem, it is good to share some practical applications that 
 
 ## nRF54L15 + STM32N6 (BLE low power sensing + camera)
 
-## 
+## Battery-powered smart camera sensor
+
+Whether it is for industrial monitoring application, wildlife capture or some kind of wearable device that captures photos when sensors detect something, this is good candidate for multi-MCU system.
+Practical choice of components may include Nordic nRF54L15 BLE module, which is the low-power MCU, running most of the time, sampling sensors and sending data and statistics over BLE, while we can have higher-performance STM32N6 MCU, which has MIPI CSI-2 interface and image signal processing (ISP) module, so one can connect higher resolution camera sensor to it, and get higher quality images and run some vision AI model on it, such as object detection model.
+Once the sensors which are samples on the nRF54L15 detect specific event (such as motion detected using PIR sensor, or vibration analysis using IMUs), the STM32N6 MCU can be powered-on, capture photo, run the vision AI model if required and be powered-off.
+To ensure operations get done as quickly as possible, using SPI physical connection between the MCUs (Nordic is master, STM is slave) is the preferred choice, along with some kind of interrupt/handshake pin for STM to notify the Nordic chip when it has some data available.
+This is typical scenario of dividing specific tasks, because of peripheral availability (MIPI CSI-2 interface, ISP pipeline are available on the STM chip) and power management (Nordic is low-power, can handle sensors and communication, while STM only gets powered on when needed).
+
+## Smart appliances - washing machine
+
+##
 
 # Difficulties managing multi-MCU systems
 
