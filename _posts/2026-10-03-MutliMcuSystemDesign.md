@@ -80,9 +80,35 @@ The MCUs must communicate between each other, so they need clearly defined proto
 This includes choosing the physical interface for communication, such as I2C, SPI, UART or something else, and also defining the protocol that runs on top of it.
 This is probably the most important interface to design, as it will make it easier to develop each subsystem and prevent complexity from spreading throughout the rest of the firmware.
 
-## Ownership of responsibilities
+### Choosing the physical interface
 
-It should be clear what every MCU does and which functions it handles.
+The physical interface choice depends on multiple factors, and it is not simply the choice of the communication protocol, but also the additional lines needed to control the MCUs.
+Some of the key decisions are listed below.
+
+### Required bandwidth
+
+Based on the required bandwidth of data that needs to be transferred between the MCUs, one could choose one of these protocols, but not limited to only them:
+
+- I2C: low to mid data rates, allowing for multiple devices on same bus
+- UART: simple point to point communication, good for commands/logging
+- SPI: high throughput, low latency, more wires and requires master/slave topology
+
+The distance and PCB topology can constrain the protocol choice.
+If the design lives on single PCB, probably I2C/UART/SPI can be fine, but if the design is on a separate PCB, the protocol choice beside signal integrity, it should consider grounding, connector pin count, differential buses, etc.
+
+The relationship between the MCUs is also factor affecting the choice.
+Typically, the choice is master/slave, in which one MCU controls other MCUs and initiates the communication.
+
+It is also important to take the voltage domains into consideration, as level shifters may be needed for proper functioning.
+
+Additionally, beside the pins for the communication interface, it is often useful to have additional GPIOs between the MCUs, used for interrupt and event handling.
+For example, instead of the master MCU asking if there is data or event available from the slave MCU, slave MCU can assert interrupt pin, notifying the master that new data or event is available.
+Similarly, having ready/busy pin can help when secondary processor has longer processing run.
+
+Beside the protocol choice, it is also important to select the proper control lines between the MCUs, mainly for fault and firmware recovery and updates and power control.
+It is often useful if one MCU can control the reset state of other MCU and its boot strapping pins, making fault recovery and firmware recovery and updates easier.
+This comes in handy with many MCUs that have ROM bootloaders, such as STM32.
+Power enable and wake pins are also useful for controlling the power of secondary MCUs.
 
 ## Startup and shutdown sequencing
 
