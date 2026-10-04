@@ -59,6 +59,14 @@ If we take the example of modern smart washing machine, we can separate the task
 
 These functions can be separated and handled by two MCUs, that may have different set of peripherals as their required functionalities are different.
 
+Similar concept can be applied to other (smart) appliances.
+
+## True Wireless Stereo (TWS) Earbuds
+
+TWS earbuds are great example of multi-MCU system, coming from the nature of the system.
+There are two earbuds, and each one of them needs local processing for Audio, Bluetooth, microphones, touch control, wear detection, battery monitoring and a lot of times Active Noise Cancellation (ANC).
+In this system, the charger case is also another subsystem, whose MCU handles: charging control and battery monitoring, detecting whether earbuds are inserted, LEDs and buttons, firmware update functions.
+
 # Difficulties managing multi-MCU systems
 
 Managing system with multiple MCUs has its difficulties.
