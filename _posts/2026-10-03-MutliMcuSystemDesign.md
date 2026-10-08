@@ -175,6 +175,42 @@ Typical storage for such info are backup registers, retained RAM or non-volatile
 
 ## Firmware compatibility and updates
 
+One of the biggest complications in multi-MCU system are firmware updates, and firmware compatibility between MCUs in the system.
+Each MCU in the system typically has its own application firmware, bootloader, release cycle and dependencies on firmware running on other MCUs.
+
+It is quite important to resolve firmware compatibility.
+If the protocol for communication between the MCUs changes, then updating single MCU may leave the system in incompatible state.
+For this reason, beside firmware version, it is important for every MCU in the system to expose additional info, mainly the protocol version, so the system can verify compatibility during boot-up.
+The protocol should be versioned independently from the firmware, as different firmwares on different MCUs, having different firmware versions, can still run the same protocol version.
+Also, it may be preferable if the protocol changes are additive, meaning there is backwards compatibility.
+This means that it is preferable to keep old commands and add new commands, instead of change/remove old commands.
+
+### Who controls firmware updates?
+
+In a multi-MCU system, a common architecture is to use single host MCU which updates the firmware of the other MCUs.
+The host MCU receives the firmware update images and performs the required steps for secondary MCUs updates, such as entering bootloader mode (if app firmware doesn't support loading update image), transferring image, and finally resetting the secondary MCU.
+
+### Bootloader choice
+
+Some MCUs come with existing ROM bootloaders, such as majority of STM32 MCUs, and by setting BOOT and RESET pins, one can select the appropriate bootloader mode.
+Many STM32 MCUs allow to enter modes for updating firmware utilizing protocols such as SPI, I2C, UART.
+
+Another solution, which is probably better in the long run, is to have custom bootloader, that can allow for:
+
+- image authentication,
+- rollback,
+- multiple slots,
+- recovery,
+- system specific commands.
+
+This bootloader is flashed during manufacturing and should be simple and well-tested.
+If the MCU has ROM bootloader, that one can be used eventually for recovery, if the custom one fails for some reason.
+
+### Multi-MCU update image
+
+When updating multi-MCU system, if the whole system needs to be updated, we can store multiple firmware images in a single update file, and additionally manifest file.
+The manifest file should include basic info for the firmware images, such as firmware versions, protocol versions, hardware compatibility, image sizes, image hashes, signatures and potentially update order.
+
 ## Debugging
 
 Debugging system with multiple MCUs poses some challenges, as bugs may depend on the timing and interactions between the MCUs.
